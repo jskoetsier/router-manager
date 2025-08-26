@@ -103,6 +103,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - VPN configurations require proper network planning
 - Regular security updates recommended
 
+## [1.1.2] - 2025-08-26
+
+### Fixed
+- **🔧 Database Schema Migration Issue**
+  - Fixed `ProgrammingError: column vpn_vpntunnel.local_id does not exist` 
+  - Resolved database schema mismatch between model fields and actual table columns
+  - Successfully migrated from `local_ip`/`remote_ip` to `local_id`/`remote_id` column names
+  - Reset and re-applied VPN app migrations to ensure database consistency
+
+- **⚙️ Service Stability Improvements**
+  - Fixed Django bootstrap5 configuration conflicts preventing service startup
+  - Ensured proper virtual environment and dependency management
+  - Verified Router Manager service runs successfully with all worker processes
+  - Confirmed all web interfaces respond correctly (login, dashboard, VPN pages)
+
+### Technical Details
+- Used `python manage.py migrate vpn zero` to reset migrations cleanly
+- Re-applied migrations with correct field names for flexible identity support
+- Verified database connectivity and model operations work properly
+- All HTTP endpoints now return expected status codes (200 for login, 302 for authenticated pages)
+
 ## [1.1.0] - 2025-08-26
 
 ### Added

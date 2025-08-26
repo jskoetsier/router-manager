@@ -52,7 +52,8 @@ class Alert(models.Model):
     timestamp = models.DateTimeField(default=timezone.now)
     acknowledged = models.BooleanField(default=False)
     acknowledged_by = models.ForeignKey(
-        User, on_delete=models.SET_NULL, null=True, blank=True
+        User, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='dashboard_alerts_acknowledged'
     )
     acknowledged_at = models.DateTimeField(null=True, blank=True)
 

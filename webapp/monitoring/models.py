@@ -71,7 +71,7 @@ class Alert(models.Model):
     enabled = models.BooleanField(default=True)
     notification_enabled = models.BooleanField(default=True)
     email_recipients = models.JSONField(default=list, blank=True)
-    created_by = models.ForeignKey(User, on_delete=models.CASCADE)
+    created_by = models.ForeignKey(User, on_delete=models.CASCADE, related_name='monitoring_alerts_created')
     created_at = models.DateTimeField(default=timezone.now)
 
     class Meta:

@@ -21,7 +21,7 @@
                 {% if configurations %}
                 <form method="post">
                     {% csrf_token %}
-                    
+
                     <div class="table-responsive">
                         <table class="table table-bordered">
                             <thead>
@@ -37,9 +37,9 @@
                                 <tr>
                                     <td><strong>{{ config.key }}</strong></td>
                                     <td>
-                                        <input type="text" 
-                                               name="config_{{ config.key }}" 
-                                               value="{{ config.value }}" 
+                                        <input type="text"
+                                               name="config_{{ config.key }}"
+                                               value="{{ config.value }}"
                                                class="form-control form-control-sm">
                                     </td>
                                     <td>{{ config.description|default:"No description" }}</td>
@@ -54,7 +54,7 @@
                             </tbody>
                         </table>
                     </div>
-                    
+
                     <div class="d-flex justify-content-between">
                         <button type="submit" class="btn btn-primary">
                             <i class="fas fa-save"></i> Save Changes
@@ -74,7 +74,7 @@
             </div>
         </div>
     </div>
-    
+
     <div class="col-lg-4">
         <div class="card shadow mb-4">
             <div class="card-header py-3">
@@ -85,24 +85,24 @@
                     <h6>Application Version</h6>
                     <p class="text-muted">Router Manager v1.0.0</p>
                 </div>
-                
+
                 <div class="mb-3">
                     <h6>Installation Path</h6>
                     <p class="text-muted small">/opt/router-manager</p>
                 </div>
-                
+
                 <div class="mb-3">
                     <h6>Configuration Path</h6>
                     <p class="text-muted small">/etc/router-manager</p>
                 </div>
-                
+
                 <div class="mb-3">
                     <h6>Log Directory</h6>
                     <p class="text-muted small">/var/log/router-manager</p>
                 </div>
-                
+
                 <hr>
-                
+
                 <h6>Quick Actions</h6>
                 <div class="d-grid gap-2">
                     <a href="{% url 'dashboard:activity_log' %}" class="btn btn-outline-primary btn-sm">
@@ -117,14 +117,14 @@
                 </div>
             </div>
         </div>
-        
+
         <div class="card shadow mb-4">
             <div class="card-header py-3">
                 <h6 class="m-0 font-weight-bold text-warning">Backup & Maintenance</h6>
             </div>
             <div class="card-body">
                 <p class="text-muted">System maintenance and backup options.</p>
-                
+
                 <div class="d-grid gap-2">
                     <button class="btn btn-outline-success btn-sm" disabled>
                         <i class="fas fa-download"></i> Export Configuration
@@ -136,7 +136,7 @@
                         <i class="fas fa-sync-alt"></i> Restart Services
                     </button>
                 </div>
-                
+
                 <div class="alert alert-info mt-3 small">
                     <i class="fas fa-info-circle"></i> These features will be available in future versions.
                 </div>
@@ -161,7 +161,7 @@
                             <li><strong>Lockout Duration:</strong> 15 minutes</li>
                         </ul>
                     </div>
-                    
+
                     <div class="col-md-6">
                         <h6>Current Session</h6>
                         <ul class="list-unstyled">
@@ -171,9 +171,9 @@
                         </ul>
                     </div>
                 </div>
-                
+
                 <hr>
-                
+
                 <div class="row">
                     <div class="col-md-6">
                         <h6>Password Management</h6>
@@ -182,7 +182,7 @@
                             <i class="fas fa-key"></i> Change Password
                         </a>
                     </div>
-                    
+
                     <div class="col-md-6">
                         <h6>User Management</h6>
                         <p class="text-muted small">Manage user accounts and permissions.</p>

@@ -4,16 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login - Router Manager</title>
-    
+
     {% load bootstrap5 %}
     {% load static %}
-    
+
     <!-- Bootstrap CSS -->
     {% bootstrap_css %}
-    
+
     <!-- Custom CSS -->
     <link href="{% static 'css/style.css' %}" rel="stylesheet">
-    
+
     <!-- Font Awesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
 </head>
@@ -33,55 +33,55 @@
                                         </h1>
                                         <p class="text-muted mb-4">Please sign in to continue</p>
                                     </div>
-                                    
+
                                     {% if form.errors %}
                                     <div class="alert alert-danger" role="alert">
                                         <i class="fas fa-exclamation-triangle"></i>
                                         Invalid username or password. Please try again.
                                     </div>
                                     {% endif %}
-                                    
+
                                     <form class="user" method="post">
                                         {% csrf_token %}
-                                        
+
                                         <div class="form-group mb-3">
-                                            <input type="text" 
-                                                   class="form-control form-control-lg" 
-                                                   name="username" 
-                                                   placeholder="Username" 
+                                            <input type="text"
+                                                   class="form-control form-control-lg"
+                                                   name="username"
+                                                   placeholder="Username"
                                                    value="{{ form.username.value|default:'' }}"
                                                    required>
                                         </div>
-                                        
+
                                         <div class="form-group mb-3">
-                                            <input type="password" 
-                                                   class="form-control form-control-lg" 
-                                                   name="password" 
-                                                   placeholder="Password" 
+                                            <input type="password"
+                                                   class="form-control form-control-lg"
+                                                   name="password"
+                                                   placeholder="Password"
                                                    required>
                                         </div>
-                                        
+
                                         <div class="form-group mb-3">
                                             <div class="form-check">
-                                                <input class="form-check-input" 
-                                                       type="checkbox" 
-                                                       name="remember_me" 
+                                                <input class="form-check-input"
+                                                       type="checkbox"
+                                                       name="remember_me"
                                                        id="remember_me">
                                                 <label class="form-check-label" for="remember_me">
                                                     Remember me
                                                 </label>
                                             </div>
                                         </div>
-                                        
+
                                         <button type="submit" class="btn btn-primary btn-lg w-100">
                                             <i class="fas fa-sign-in-alt"></i> Sign In
                                         </button>
-                                        
+
                                         <input type="hidden" name="next" value="{{ next }}">
                                     </form>
-                                    
+
                                     <hr>
-                                    
+
                                     <div class="text-center">
                                         <small class="text-muted">
                                             Default credentials: admin / admin
@@ -92,7 +92,7 @@
                         </div>
                     </div>
                 </div>
-                
+
                 <div class="text-center">
                     <small class="text-muted">
                         &copy; 2024 Router Manager. All rights reserved.

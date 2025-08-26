@@ -21,7 +21,7 @@
             <div class="card-body">
                 <form method="post">
                     {% csrf_token %}
-                    
+
                     <div class="mb-3">
                         <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" name="ipv4_forwarding" id="ipv4ForwardingAdvanced"
@@ -31,7 +31,7 @@
                             </label>
                         </div>
                         <small class="text-muted">
-                            Current Status: 
+                            Current Status:
                             {% if forwarding_status.ipv4_forwarding %}
                                 <span class="text-success">Enabled</span>
                             {% else %}
@@ -39,7 +39,7 @@
                             {% endif %}
                         </small>
                     </div>
-                    
+
                     <div class="mb-3">
                         <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" name="ipv6_forwarding" id="ipv6ForwardingAdvanced"
@@ -49,7 +49,7 @@
                             </label>
                         </div>
                         <small class="text-muted">
-                            Current Status: 
+                            Current Status:
                             {% if forwarding_status.ipv6_forwarding %}
                                 <span class="text-success">Enabled</span>
                             {% else %}
@@ -57,21 +57,21 @@
                             {% endif %}
                         </small>
                     </div>
-                    
+
                     <button type="submit" name="toggle_ip_forwarding" class="btn btn-primary">
                         <i class="fas fa-save"></i> Update IP Forwarding
                     </button>
                 </form>
-                
+
                 <hr>
-                
+
                 <div class="alert alert-info small">
                     <strong>Note:</strong> IP forwarding is required for routing traffic between network interfaces and is essential for NAT functionality.
                 </div>
             </div>
         </div>
     </div>
-    
+
     <!-- NAT Configuration -->
     <div class="col-md-6">
         <div class="card shadow mb-4">
@@ -81,7 +81,7 @@
             <div class="card-body">
                 <form method="post">
                     {% csrf_token %}
-                    
+
                     <div class="mb-3">
                         <div class="form-check form-switch">
                             <input class="form-check-input" type="checkbox" name="nat_enabled" id="natEnabledAdvanced"
@@ -91,7 +91,7 @@
                             </label>
                         </div>
                         <small class="text-muted">
-                            Current Status: 
+                            Current Status:
                             {% if nat_status.nat_enabled %}
                                 <span class="text-success">Active</span>
                             {% else %}
@@ -99,7 +99,7 @@
                             {% endif %}
                         </small>
                     </div>
-                    
+
                     <div class="mb-3">
                         <label for="natInterfaceAdvanced" class="form-label">NAT Interface</label>
                         <select class="form-select" name="nat_interface" id="natInterfaceAdvanced">
@@ -118,14 +118,14 @@
                         </select>
                         <small class="text-muted">Select the outbound interface for NAT</small>
                     </div>
-                    
+
                     <button type="submit" name="toggle_nat" class="btn btn-success">
                         <i class="fas fa-save"></i> Update NAT Settings
                     </button>
                 </form>
-                
+
                 <hr>
-                
+
                 <div class="alert alert-warning small">
                     <strong>Warning:</strong> Enabling NAT will modify nftables rules. Ensure you have proper access before making changes.
                 </div>
@@ -183,7 +183,7 @@
             </div>
         </div>
     </div>
-    
+
     <div class="col-lg-6">
         <div class="card shadow mb-4">
             <div class="card-header py-3">
@@ -201,19 +201,19 @@
                         <div class="h5 mb-0">{{ nftables_info.rule_count }}</div>
                     </div>
                 </div>
-                
+
                 {% if nftables_info.error %}
                 <div class="alert alert-danger small">
                     <strong>Error:</strong> {{ nftables_info.error }}
                 </div>
                 {% endif %}
-                
+
                 {% else %}
                 <div class="alert alert-warning">
                     <i class="fas fa-exclamation-triangle"></i> Unable to retrieve firewall status.
                 </div>
                 {% endif %}
-                
+
                 <div class="d-grid">
                     <a href="{% url 'nftables:home' %}" class="btn btn-outline-primary btn-sm">
                         <i class="fas fa-shield-alt"></i> Manage Firewall
@@ -237,7 +237,7 @@
                         <h6>System Settings</h6>
                         <ul class="list-unstyled small">
                             <li>
-                                <strong>IPv4 Forwarding:</strong> 
+                                <strong>IPv4 Forwarding:</strong>
                                 {% if forwarding_status.ipv4_forwarding %}
                                     <span class="text-success">Enabled</span>
                                 {% else %}
@@ -245,7 +245,7 @@
                                 {% endif %}
                             </li>
                             <li>
-                                <strong>IPv6 Forwarding:</strong> 
+                                <strong>IPv6 Forwarding:</strong>
                                 {% if forwarding_status.ipv6_forwarding %}
                                     <span class="text-success">Enabled</span>
                                 {% else %}
@@ -253,7 +253,7 @@
                                 {% endif %}
                             </li>
                             <li>
-                                <strong>NAT Status:</strong> 
+                                <strong>NAT Status:</strong>
                                 {% if nat_status.nat_enabled %}
                                     <span class="text-success">Active</span>
                                 {% else %}
@@ -262,7 +262,7 @@
                             </li>
                         </ul>
                     </div>
-                    
+
                     <div class="col-md-4">
                         <h6>Network Summary</h6>
                         <ul class="list-unstyled small">
@@ -271,7 +271,7 @@
                             <li><strong>Firewall Rules:</strong> {{ nftables_info.rule_count|default:0 }}</li>
                         </ul>
                     </div>
-                    
+
                     <div class="col-md-4">
                         <h6>Quick Actions</h6>
                         <div class="d-grid gap-2">

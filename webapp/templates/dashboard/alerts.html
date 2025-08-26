@@ -16,7 +16,7 @@
         <div class="card shadow">
             <div class="card-header py-3 d-flex justify-content-between align-items-center">
                 <h6 class="m-0 font-weight-bold text-primary">Alert Management</h6>
-                
+
                 <div class="btn-group" role="group">
                     <a href="?acknowledged=false" class="btn btn-sm {% if ack_filter == 'false' %}btn-warning{% else %}btn-outline-warning{% endif %}">
                         Active Alerts
@@ -78,7 +78,7 @@
                                 </td>
                                 <td>
                                     {% if not alert.acknowledged %}
-                                        <a href="{% url 'dashboard:acknowledge_alert' alert.id %}" 
+                                        <a href="{% url 'dashboard:acknowledge_alert' alert.id %}"
                                            class="btn btn-sm btn-success"
                                            onclick="return confirm('Acknowledge this alert?')">
                                             <i class="fas fa-check"></i> Acknowledge
@@ -94,7 +94,7 @@
                         </tbody>
                     </table>
                 </div>
-                
+
                 <!-- Pagination -->
                 {% if alerts.has_other_pages %}
                 <nav aria-label="Alert pagination">
@@ -104,7 +104,7 @@
                                 <a class="page-link" href="?page={{ alerts.previous_page_number }}{% if severity_filter %}&severity={{ severity_filter }}{% endif %}{% if ack_filter %}&acknowledged={{ ack_filter }}{% endif %}">Previous</a>
                             </li>
                         {% endif %}
-                        
+
                         {% for num in alerts.paginator.page_range %}
                             {% if alerts.number == num %}
                                 <li class="page-item active">
@@ -116,7 +116,7 @@
                                 </li>
                             {% endif %}
                         {% endfor %}
-                        
+
                         {% if alerts.has_next %}
                             <li class="page-item">
                                 <a class="page-link" href="?page={{ alerts.next_page_number }}{% if severity_filter %}&severity={{ severity_filter }}{% endif %}{% if ack_filter %}&acknowledged={{ ack_filter }}{% endif %}">Next</a>
@@ -125,7 +125,7 @@
                     </ul>
                 </nav>
                 {% endif %}
-                
+
                 {% else %}
                 <div class="text-center">
                     <i class="fas fa-check-circle fa-3x text-success mb-3"></i>

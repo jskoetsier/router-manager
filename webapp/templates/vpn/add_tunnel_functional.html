@@ -22,11 +22,11 @@
             <div class="card-body">
                 <form method="post">
                     {% csrf_token %}
-                    
+
                     <!-- Basic Information -->
                     <div class="mb-4">
                         <h5 class="border-bottom pb-2">Basic Information</h5>
-                        
+
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
@@ -40,7 +40,7 @@
                                     {% endif %}
                                 </div>
                             </div>
-                            
+
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label for="{{ form.tunnel_type.id_for_label }}" class="form-label">{{ form.tunnel_type.label }}</label>
@@ -51,7 +51,7 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="mb-3">
                             <label for="{{ form.description.id_for_label }}" class="form-label">{{ form.description.label }}</label>
                             {{ form.description }}
@@ -60,11 +60,11 @@
                             {% endif %}
                         </div>
                     </div>
-                    
+
                     <!-- Network Configuration -->
                     <div class="mb-4">
                         <h5 class="border-bottom pb-2">Network Configuration</h5>
-                        
+
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
@@ -78,7 +78,7 @@
                                     {% endif %}
                                 </div>
                             </div>
-                            
+
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label for="{{ form.remote_ip.id_for_label }}" class="form-label">{{ form.remote_ip.label }}</label>
@@ -92,7 +92,7 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="mb-3">
@@ -106,7 +106,7 @@
                                     {% endif %}
                                 </div>
                             </div>
-                            
+
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label for="{{ form.remote_subnet.id_for_label }}" class="form-label">{{ form.remote_subnet.label }}</label>
@@ -121,11 +121,11 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <!-- Security Configuration -->
                     <div class="mb-4">
                         <h5 class="border-bottom pb-2">Security Configuration</h5>
-                        
+
                         <div class="mb-3">
                             <div class="form-check">
                                 {{ form.generate_key }}
@@ -134,7 +134,7 @@
                                 </label>
                             </div>
                         </div>
-                        
+
                         <div class="mb-3" id="pskField">
                             <label for="{{ form.pre_shared_key.id_for_label }}" class="form-label">{{ form.pre_shared_key.label }}</label>
                             {{ form.pre_shared_key }}
@@ -146,11 +146,11 @@
                             {% endif %}
                         </div>
                     </div>
-                    
+
                     <!-- Advanced Options -->
                     <div class="mb-4">
                         <h5 class="border-bottom pb-2">Advanced Options</h5>
-                        
+
                         <div class="form-check">
                             {{ form.auto_start }}
                             <label class="form-check-label" for="{{ form.auto_start.id_for_label }}">
@@ -161,7 +161,7 @@
                             {% endif %}
                         </div>
                     </div>
-                    
+
                     <!-- Form Errors -->
                     {% if form.non_field_errors %}
                     <div class="alert alert-danger">
@@ -170,11 +170,11 @@
                         {% endfor %}
                     </div>
                     {% endif %}
-                    
+
                     <!-- Action Buttons -->
                     <div class="d-flex gap-2">
                         <button type="submit" class="btn btn-primary">
-                            <i class="fas fa-save"></i> 
+                            <i class="fas fa-save"></i>
                             {% if tunnel %}Update Tunnel{% else %}Create Tunnel{% endif %}
                         </button>
                         <a href="{% url 'vpn:tunnels_list' %}" class="btn btn-secondary">
@@ -185,7 +185,7 @@
             </div>
         </div>
     </div>
-    
+
     <div class="col-lg-4">
         <div class="card shadow mb-4">
             <div class="card-header py-3">
@@ -198,14 +198,14 @@
                     <li><strong>Remote IP:</strong> The other VPN endpoint's public IP</li>
                     <li><strong>Subnets:</strong> Use CIDR notation (e.g., 192.168.1.0/24)</li>
                 </ul>
-                
+
                 <h6>Security</h6>
                 <ul class="small">
                     <li>Pre-shared keys should be complex and unique</li>
                     <li>Auto-generation creates a 32-character random key</li>
                     <li>Keep the key secure and share only with authorized personnel</li>
                 </ul>
-                
+
                 <h6>Tunnel Types</h6>
                 <ul class="small">
                     <li><strong>Site-to-Site:</strong> Connect two networks</li>
@@ -214,7 +214,7 @@
                 </ul>
             </div>
         </div>
-        
+
         <div class="card shadow">
             <div class="card-header py-3">
                 <h6 class="m-0 font-weight-bold text-warning">Important Notes</h6>
@@ -229,7 +229,7 @@
                         <li>Test connectivity between public IPs</li>
                     </ul>
                 </div>
-                
+
                 <div class="alert alert-info small">
                     <strong>After creation:</strong>
                     <ul class="mb-0 mt-2">
@@ -250,7 +250,7 @@ function togglePSKField() {
     const generateKey = document.querySelector('input[name="generate_key"]');
     const pskField = document.getElementById('pskField');
     const pskInput = document.querySelector('input[name="pre_shared_key"]');
-    
+
     if (generateKey.checked) {
         pskField.style.display = 'none';
         pskInput.required = false;

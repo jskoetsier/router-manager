@@ -1,26 +1,28 @@
 """
 nftables management models
 """
-from django.db import models
+
 from django.contrib.auth.models import User
+from django.db import models
 from django.utils import timezone
 
 
 class NFTableRule(models.Model):
     """nftables firewall rule"""
+
     PROTOCOL_CHOICES = [
-        ('tcp', 'TCP'),
-        ('udp', 'UDP'),
-        ('icmp', 'ICMP'),
-        ('all', 'All'),
+        ("tcp", "TCP"),
+        ("udp", "UDP"),
+        ("icmp", "ICMP"),
+        ("all", "All"),
     ]
-    
+
     ACTION_CHOICES = [
-        ('accept', 'Accept'),
-        ('drop', 'Drop'),
-        ('reject', 'Reject'),
+        ("accept", "Accept"),
+        ("drop", "Drop"),
+        ("reject", "Reject"),
     ]
-    
+
     name = models.CharField(max_length=100)
     description = models.TextField(blank=True)
     protocol = models.CharField(max_length=10, choices=PROTOCOL_CHOICES)
@@ -33,13 +35,14 @@ class NFTableRule(models.Model):
     priority = models.PositiveIntegerField(default=100)
     created_by = models.ForeignKey(User, on_delete=models.CASCADE)
     created_at = models.DateTimeField(default=timezone.now)
-    
+
     class Meta:
-        ordering = ['priority', 'name']
+        ordering = ["priority", "name"]
 
 
 class PortForward(models.Model):
     """Port forwarding rule"""
+
     name = models.CharField(max_length=100)
     external_port = models.PositiveIntegerField()
     internal_ip = models.GenericIPAddressField()
@@ -48,7 +51,7 @@ class PortForward(models.Model):
     enabled = models.BooleanField(default=True)
     created_by = models.ForeignKey(User, on_delete=models.CASCADE)
     created_at = models.DateTimeField(default=timezone.now)
-    
+
     class Meta:
-        unique_together = ['external_port', 'protocol']
-        ordering = ['external_port']
+        unique_together = ["external_port", "protocol"]
+        ordering = ["external_port"]

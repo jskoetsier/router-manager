@@ -10,8 +10,8 @@ from dashboard.utils import log_user_activity
 from .models import VPNTunnel
 from .forms import VPNTunnelForm, QuickVPNForm
 from .utils import (
-    get_strongswan_status, 
-    create_ipsec_config, 
+    get_strongswan_status,
+    create_ipsec_config,
     add_tunnel_to_strongswan,
     remove_tunnel_from_strongswan,
     get_tunnel_status
@@ -23,21 +23,21 @@ def home(request):
     """VPN management home"""
     # Get StrongSwan status
     strongswan_status = get_strongswan_status()
-    
+
     # Get tunnel counts
     total_tunnels = VPNTunnel.objects.count()
     active_tunnels = VPNTunnel.objects.filter(enabled=True).count()
-    
+
     # Get recent tunnels
     recent_tunnels = VPNTunnel.objects.order_by('-created_at')[:5]
-    
+
     context = {
         'strongswan_status': strongswan_status,
         'total_tunnels': total_tunnels,
         'active_tunnels': active_tunnels,
         'recent_tunnels': recent_tunnels,
     }
-    
+
     return render(request, 'vpn/home.html', context)
 
 
@@ -45,20 +45,20 @@ def home(request):
 def tunnels_list(request):
     """List VPN tunnels"""
     tunnels = VPNTunnel.objects.all().order_by('name')
-    
+
     # Add status information to each tunnel
     for tunnel in tunnels:
         tunnel.current_status = get_tunnel_status(tunnel.name)
-    
+
     # Pagination
     paginator = Paginator(tunnels, 10)
     page_number = request.GET.get('page')
     tunnels_page = paginator.get_page(page_number)
-    
+
     context = {
         'tunnels': tunnels_page,
     }
-    
+
     return render(request, 'vpn/tunnels_list.html', context)
 
 
@@ -73,7 +73,7 @@ def add_tunnel(request):
                 tunnel = form.save(commit=False)
                 tunnel.created_by = request.user
                 tunnel.save()
-                
+
                 # Create StrongSwan configuration
                 config = create_ipsec_config(
                     tunnel_name=tunnel.name,
@@ -83,16 +83,16 @@ def add_tunnel(request):
                     remote_subnet=tunnel.remote_subnet,
                     psk=tunnel.pre_shared_key
                 )
-                
+
                 if config['success']:
                     # Add configuration to StrongSwan
                     config['name'] = tunnel.name
                     results = add_tunnel_to_strongswan(config)
-                    
+
                     # Check if all operations succeeded
                     success_count = sum(1 for _, success, _ in results if success)
                     total_count = len(results)
-                    
+
                     if success_count == total_count:
                         messages.success(request, f'VPN tunnel "{tunnel.name}" created successfully!')
                         log_user_activity(
@@ -115,7 +115,7 @@ def add_tunnel(request):
                 else:
                     messages.error(request, f'Failed to create tunnel configuration: {config.get("error", "Unknown error")}')
                     tunnel.delete()  # Clean up the database entry
-                    
+
             except Exception as e:
                 messages.error(request, f'Failed to create VPN tunnel: {str(e)}')
                 log_user_activity(
@@ -126,12 +126,12 @@ def add_tunnel(request):
                 )
     else:
         form = VPNTunnelForm()
-    
+
     context = {
         'form': form,
         'page_title': 'Add VPN Tunnel'
     }
-    
+
     return render(request, 'vpn/add_tunnel.html', context)
 
 
@@ -139,7 +139,7 @@ def add_tunnel(request):
 def edit_tunnel(request, tunnel_id):
     """Edit existing VPN tunnel"""
     tunnel = get_object_or_404(VPNTunnel, id=tunnel_id)
-    
+
     if request.method == 'POST':
         form = VPNTunnelForm(request.POST, instance=tunnel)
         if form.is_valid():
@@ -154,13 +154,13 @@ def edit_tunnel(request, tunnel_id):
             return redirect('vpn:tunnels_list')
     else:
         form = VPNTunnelForm(instance=tunnel)
-    
+
     context = {
         'form': form,
         'tunnel': tunnel,
         'page_title': f'Edit VPN Tunnel: {tunnel.name}'
     }
-    
+
     return render(request, 'vpn/add_tunnel.html', context)
 
 
@@ -168,16 +168,16 @@ def edit_tunnel(request, tunnel_id):
 def delete_tunnel(request, tunnel_id):
     """Delete VPN tunnel"""
     tunnel = get_object_or_404(VPNTunnel, id=tunnel_id)
-    
+
     if request.method == 'POST':
         try:
             # Remove from StrongSwan configuration
             results = remove_tunnel_from_strongswan(tunnel.name)
-            
+
             # Delete from database
             tunnel_name = tunnel.name
             tunnel.delete()
-            
+
             messages.success(request, f'VPN tunnel "{tunnel_name}" deleted successfully!')
             log_user_activity(
                 request.user,
@@ -185,7 +185,7 @@ def delete_tunnel(request, tunnel_id):
                 request.META.get('REMOTE_ADDR', ''),
                 True
             )
-            
+
         except Exception as e:
             messages.error(request, f'Failed to delete VPN tunnel: {str(e)}')
             log_user_activity(
@@ -194,7 +194,7 @@ def delete_tunnel(request, tunnel_id):
                 request.META.get('REMOTE_ADDR', ''),
                 False
             )
-    
+
     return redirect('vpn:tunnels_list')
 
 
@@ -202,7 +202,7 @@ def delete_tunnel(request, tunnel_id):
 def tunnel_control(request, tunnel_id, action):
     """Control tunnel (start/stop/restart)"""
     tunnel = get_object_or_404(VPNTunnel, id=tunnel_id)
-    
+
     try:
         if action == 'start':
             result = add_tunnel_to_strongswan({'name': tunnel.name})
@@ -218,7 +218,7 @@ def tunnel_control(request, tunnel_id, action):
         else:
             messages.error(request, 'Invalid action')
             return redirect('vpn:tunnels_list')
-        
+
         messages.success(request, message)
         log_user_activity(
             request.user,
@@ -226,7 +226,7 @@ def tunnel_control(request, tunnel_id, action):
             request.META.get('REMOTE_ADDR', ''),
             True
         )
-        
+
     except Exception as e:
         messages.error(request, f'Failed to {action} tunnel: {str(e)}')
         log_user_activity(
@@ -235,7 +235,7 @@ def tunnel_control(request, tunnel_id, action):
             request.META.get('REMOTE_ADDR', ''),
             False
         )
-    
+
     return redirect('vpn:tunnels_list')
 
 
@@ -243,7 +243,7 @@ def tunnel_control(request, tunnel_id, action):
 def tunnel_status_api(request, tunnel_id):
     """API endpoint for tunnel status"""
     tunnel = get_object_or_404(VPNTunnel, id=tunnel_id)
-    
+
     try:
         status = get_tunnel_status(tunnel.name)
         return JsonResponse({
@@ -290,18 +290,18 @@ def quick_setup(request):
                     pre_shared_key='auto-generated-key',  # Will be generated
                     created_by=request.user
                 )
-                
+
                 messages.success(request, f'Quick VPN setup completed for "{tunnel.name}"!')
                 return redirect('vpn:tunnels_list')
-                
+
             except Exception as e:
                 messages.error(request, f'Quick setup failed: {str(e)}')
     else:
         form = QuickVPNForm()
-    
+
     context = {
         'form': form,
         'page_title': 'Quick VPN Setup'
     }
-    
+
     return render(request, 'vpn/quick_setup.html', context)

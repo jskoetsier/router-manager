@@ -1,0 +1,198 @@
+{% extends 'base.html' %}
+
+{% block title %}Settings - Router Manager{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-cog"></i> System Settings
+        </h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Configuration Management</h6>
+            </div>
+            <div class="card-body">
+                {% if configurations %}
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="table-responsive">
+                        <table class="table table-bordered">
+                            <thead>
+                                <tr>
+                                    <th>Setting</th>
+                                    <th>Value</th>
+                                    <th>Description</th>
+                                    <th>Last Updated</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for config in configurations %}
+                                <tr>
+                                    <td><strong>{{ config.key }}</strong></td>
+                                    <td>
+                                        <input type="text" 
+                                               name="config_{{ config.key }}" 
+                                               value="{{ config.value }}" 
+                                               class="form-control form-control-sm">
+                                    </td>
+                                    <td>{{ config.description|default:"No description" }}</td>
+                                    <td>
+                                        <small>{{ config.updated_at|date:"M d, Y H:i" }}</small>
+                                        {% if config.updated_by %}
+                                            <br><small class="text-muted">by {{ config.updated_by.username }}</small>
+                                        {% endif %}
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                    
+                    <div class="d-flex justify-content-between">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Save Changes
+                        </button>
+                        <a href="{% url 'dashboard:home' %}" class="btn btn-secondary">
+                            <i class="fas fa-arrow-left"></i> Back to Dashboard
+                        </a>
+                    </div>
+                </form>
+                {% else %}
+                <div class="text-center">
+                    <i class="fas fa-cog fa-3x text-muted mb-3"></i>
+                    <h5>No Configuration Settings</h5>
+                    <p class="text-muted">No configuration settings have been created yet.</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-info">System Information</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <h6>Application Version</h6>
+                    <p class="text-muted">Router Manager v1.0.0</p>
+                </div>
+                
+                <div class="mb-3">
+                    <h6>Installation Path</h6>
+                    <p class="text-muted small">/opt/router-manager</p>
+                </div>
+                
+                <div class="mb-3">
+                    <h6>Configuration Path</h6>
+                    <p class="text-muted small">/etc/router-manager</p>
+                </div>
+                
+                <div class="mb-3">
+                    <h6>Log Directory</h6>
+                    <p class="text-muted small">/var/log/router-manager</p>
+                </div>
+                
+                <hr>
+                
+                <h6>Quick Actions</h6>
+                <div class="d-grid gap-2">
+                    <a href="{% url 'dashboard:activity_log' %}" class="btn btn-outline-primary btn-sm">
+                        <i class="fas fa-history"></i> View Activity Log
+                    </a>
+                    <a href="{% url 'dashboard:alerts' %}" class="btn btn-outline-warning btn-sm">
+                        <i class="fas fa-bell"></i> System Alerts
+                    </a>
+                    <a href="{% url 'dashboard:system_info' %}" class="btn btn-outline-info btn-sm">
+                        <i class="fas fa-info-circle"></i> System Information
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-warning">Backup & Maintenance</h6>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">System maintenance and backup options.</p>
+                
+                <div class="d-grid gap-2">
+                    <button class="btn btn-outline-success btn-sm" disabled>
+                        <i class="fas fa-download"></i> Export Configuration
+                    </button>
+                    <button class="btn btn-outline-primary btn-sm" disabled>
+                        <i class="fas fa-upload"></i> Import Configuration
+                    </button>
+                    <button class="btn btn-outline-warning btn-sm" disabled>
+                        <i class="fas fa-sync-alt"></i> Restart Services
+                    </button>
+                </div>
+                
+                <div class="alert alert-info mt-3 small">
+                    <i class="fas fa-info-circle"></i> These features will be available in future versions.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-secondary">Security & Access</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Session Settings</h6>
+                        <ul class="list-unstyled">
+                            <li><strong>Session Timeout:</strong> 1 hour</li>
+                            <li><strong>Max Login Attempts:</strong> 5</li>
+                            <li><strong>Lockout Duration:</strong> 15 minutes</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h6>Current Session</h6>
+                        <ul class="list-unstyled">
+                            <li><strong>User:</strong> {{ user.username }}</li>
+                            <li><strong>Login Time:</strong> {{ user.last_login|date:"M d, Y H:i" }}</li>
+                            <li><strong>IP Address:</strong> {{ request.META.REMOTE_ADDR|default:"Unknown" }}</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Password Management</h6>
+                        <p class="text-muted small">Change your password or manage user accounts.</p>
+                        <a href="/admin/auth/user/{{ user.id }}/password/" class="btn btn-outline-primary btn-sm" target="_blank">
+                            <i class="fas fa-key"></i> Change Password
+                        </a>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h6>User Management</h6>
+                        <p class="text-muted small">Manage user accounts and permissions.</p>
+                        <a href="/admin/auth/user/" class="btn btn-outline-secondary btn-sm" target="_blank">
+                            <i class="fas fa-users"></i> Manage Users
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

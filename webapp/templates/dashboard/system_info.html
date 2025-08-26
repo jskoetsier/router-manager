@@ -1,0 +1,310 @@
+{% extends 'base.html' %}
+
+{% block title %}System Information - Router Manager{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-info-circle"></i> System Information
+        </h1>
+    </div>
+</div>
+
+<div class="row">
+    <!-- System Overview -->
+    <div class="col-lg-6">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">System Overview</h6>
+            </div>
+            <div class="card-body">
+                {% if system_info %}
+                <table class="table table-borderless">
+                    <tr>
+                        <td><strong>Hostname:</strong></td>
+                        <td>{{ system_info.hostname|default:"Unknown" }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Operating System:</strong></td>
+                        <td>{{ system_info.system|default:"Unknown" }} {{ system_info.release|default:"" }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Architecture:</strong></td>
+                        <td>{{ system_info.machine|default:"Unknown" }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Kernel Version:</strong></td>
+                        <td>{{ system_info.version|default:"Unknown" }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Boot Time:</strong></td>
+                        <td>{{ system_info.boot_time|date:"M d, Y H:i"|default:"Unknown" }}</td>
+                    </tr>
+                </table>
+                {% else %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i> Unable to load system information.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Hardware Information -->
+    <div class="col-lg-6">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-success">Hardware Information</h6>
+            </div>
+            <div class="card-body">
+                {% if system_info.cpu %}
+                <h6>CPU Information</h6>
+                <table class="table table-sm table-borderless">
+                    <tr>
+                        <td><strong>Physical Cores:</strong></td>
+                        <td>{{ system_info.cpu.physical_cores|default:"Unknown" }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Total Cores:</strong></td>
+                        <td>{{ system_info.cpu.total_cores|default:"Unknown" }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Current Usage:</strong></td>
+                        <td>{{ system_info.cpu.usage|default:"Unknown" }}</td>
+                    </tr>
+                    {% if system_info.cpu.max_frequency %}
+                    <tr>
+                        <td><strong>Max Frequency:</strong></td>
+                        <td>{{ system_info.cpu.max_frequency }}</td>
+                    </tr>
+                    {% endif %}
+                </table>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Memory Information -->
+    <div class="col-lg-6">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-info">Memory Information</h6>
+            </div>
+            <div class="card-body">
+                {% if system_info.memory %}
+                <table class="table table-borderless">
+                    <tr>
+                        <td><strong>Total Memory:</strong></td>
+                        <td>{{ system_info.memory.total|default:"Unknown" }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Available:</strong></td>
+                        <td>{{ system_info.memory.available|default:"Unknown" }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Used:</strong></td>
+                        <td>{{ system_info.memory.used|default:"Unknown" }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Usage:</strong></td>
+                        <td>
+                            {{ system_info.memory.percentage|default:"Unknown" }}
+                            {% if system_info.memory.percentage %}
+                            <div class="progress mt-2" style="height: 6px;">
+                                <div class="progress-bar {% if system_info.memory.percentage|cut:'%'|add:0 > 80 %}bg-danger{% elif system_info.memory.percentage|cut:'%'|add:0 > 60 %}bg-warning{% else %}bg-success{% endif %}" 
+                                     role="progressbar" 
+                                     style="width: {{ system_info.memory.percentage }}"></div>
+                            </div>
+                            {% endif %}
+                        </td>
+                    </tr>
+                </table>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Disk Information -->
+    <div class="col-lg-6">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-warning">Disk Information</h6>
+            </div>
+            <div class="card-body">
+                {% if system_info.disk %}
+                <table class="table table-borderless">
+                    <tr>
+                        <td><strong>Total Space:</strong></td>
+                        <td>{{ system_info.disk.total|default:"Unknown" }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Used Space:</strong></td>
+                        <td>{{ system_info.disk.used|default:"Unknown" }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Free Space:</strong></td>
+                        <td>{{ system_info.disk.free|default:"Unknown" }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Usage:</strong></td>
+                        <td>
+                            {{ system_info.disk.percentage|default:"Unknown" }}
+                            {% if system_info.disk.percentage %}
+                            <div class="progress mt-2" style="height: 6px;">
+                                <div class="progress-bar {% if system_info.disk.percentage|cut:'%'|add:0 > 90 %}bg-danger{% elif system_info.disk.percentage|cut:'%'|add:0 > 75 %}bg-warning{% else %}bg-success{% endif %}" 
+                                     role="progressbar" 
+                                     style="width: {{ system_info.disk.percentage }}"></div>
+                            </div>
+                            {% endif %}
+                        </td>
+                    </tr>
+                </table>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Performance Charts -->
+{% if chart_data %}
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Performance Charts (Last 24 Hours)</h6>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="performanceChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- System Processes (placeholder for future implementation) -->
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-secondary">System Services Status</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Core Services</h6>
+                        <ul class="list-unstyled">
+                            <li class="mb-2">
+                                <i class="fas fa-circle text-success"></i>
+                                <strong>PostgreSQL</strong> - Database Service
+                                <span class="badge bg-success ms-2">Running</span>
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-circle text-success"></i>
+                                <strong>Nginx</strong> - Web Server
+                                <span class="badge bg-success ms-2">Running</span>
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-circle text-success"></i>
+                                <strong>Router Manager</strong> - Application
+                                <span class="badge bg-success ms-2">Running</span>
+                            </li>
+                        </ul>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <h6>Network Services</h6>
+                        <ul class="list-unstyled">
+                            <li class="mb-2">
+                                <i class="fas fa-circle text-success"></i>
+                                <strong>nftables</strong> - Firewall
+                                <span class="badge bg-success ms-2">Active</span>
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-circle text-warning"></i>
+                                <strong>strongSwan</strong> - VPN Service
+                                <span class="badge bg-warning ms-2">Loaded</span>
+                            </li>
+                            <li class="mb-2">
+                                <i class="fas fa-circle text-success"></i>
+                                <strong>Redis</strong> - Cache Service
+                                <span class="badge bg-success ms-2">Running</span>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="alert alert-info mt-3">
+                    <i class="fas fa-info-circle"></i> 
+                    <strong>Note:</strong> Real-time service monitoring will be implemented in future versions. 
+                    Current status is based on installation configuration.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if chart_data %}
+<script>
+// Performance Chart
+const chartData = {{ chart_data|safe }};
+
+const ctx = document.getElementById('performanceChart').getContext('2d');
+const performanceChart = new Chart(ctx, {
+    type: 'line',
+    data: {
+        labels: chartData.labels,
+        datasets: [{
+            label: 'CPU Usage (%)',
+            data: chartData.cpu_data,
+            borderColor: 'rgb(54, 162, 235)',
+            backgroundColor: 'rgba(54, 162, 235, 0.1)',
+            tension: 0.1
+        }, {
+            label: 'Memory Usage (%)',
+            data: chartData.memory_data,
+            borderColor: 'rgb(75, 192, 192)',
+            backgroundColor: 'rgba(75, 192, 192, 0.1)',
+            tension: 0.1
+        }, {
+            label: 'Disk Usage (%)',
+            data: chartData.disk_data,
+            borderColor: 'rgb(255, 205, 86)',
+            backgroundColor: 'rgba(255, 205, 86, 0.1)',
+            tension: 0.1
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            title: {
+                display: true,
+                text: 'System Resource Usage Over Time'
+            },
+            legend: {
+                position: 'top',
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                max: 100,
+                ticks: {
+                    callback: function(value) {
+                        return value + '%';
+                    }
+                }
+            }
+        }
+    }
+});
+</script>
+{% endif %}
+{% endblock %}

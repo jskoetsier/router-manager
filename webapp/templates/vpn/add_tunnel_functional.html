@@ -1,0 +1,268 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ page_title|default:"Add VPN Tunnel" }} - Router Manager{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-plus"></i> {{ page_title|default:"Add VPN Tunnel" }}
+        </h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">
+                    {% if tunnel %}Edit{% else %}New{% endif %} IPSec VPN Tunnel Configuration
+                </h6>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <!-- Basic Information -->
+                    <div class="mb-4">
+                        <h5 class="border-bottom pb-2">Basic Information</h5>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.name.id_for_label }}" class="form-label">{{ form.name.label }}</label>
+                                    {{ form.name }}
+                                    {% if form.name.help_text %}
+                                        <div class="form-text">{{ form.name.help_text }}</div>
+                                    {% endif %}
+                                    {% if form.name.errors %}
+                                        <div class="text-danger">{{ form.name.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.tunnel_type.id_for_label }}" class="form-label">{{ form.tunnel_type.label }}</label>
+                                    {{ form.tunnel_type }}
+                                    {% if form.tunnel_type.help_text %}
+                                        <div class="form-text">{{ form.tunnel_type.help_text }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="{{ form.description.id_for_label }}" class="form-label">{{ form.description.label }}</label>
+                            {{ form.description }}
+                            {% if form.description.help_text %}
+                                <div class="form-text">{{ form.description.help_text }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Network Configuration -->
+                    <div class="mb-4">
+                        <h5 class="border-bottom pb-2">Network Configuration</h5>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.local_ip.id_for_label }}" class="form-label">{{ form.local_ip.label }}</label>
+                                    {{ form.local_ip }}
+                                    {% if form.local_ip.help_text %}
+                                        <div class="form-text">{{ form.local_ip.help_text }}</div>
+                                    {% endif %}
+                                    {% if form.local_ip.errors %}
+                                        <div class="text-danger">{{ form.local_ip.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.remote_ip.id_for_label }}" class="form-label">{{ form.remote_ip.label }}</label>
+                                    {{ form.remote_ip }}
+                                    {% if form.remote_ip.help_text %}
+                                        <div class="form-text">{{ form.remote_ip.help_text }}</div>
+                                    {% endif %}
+                                    {% if form.remote_ip.errors %}
+                                        <div class="text-danger">{{ form.remote_ip.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.local_subnet.id_for_label }}" class="form-label">{{ form.local_subnet.label }}</label>
+                                    {{ form.local_subnet }}
+                                    {% if form.local_subnet.help_text %}
+                                        <div class="form-text">{{ form.local_subnet.help_text }}</div>
+                                    {% endif %}
+                                    {% if form.local_subnet.errors %}
+                                        <div class="text-danger">{{ form.local_subnet.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="{{ form.remote_subnet.id_for_label }}" class="form-label">{{ form.remote_subnet.label }}</label>
+                                    {{ form.remote_subnet }}
+                                    {% if form.remote_subnet.help_text %}
+                                        <div class="form-text">{{ form.remote_subnet.help_text }}</div>
+                                    {% endif %}
+                                    {% if form.remote_subnet.errors %}
+                                        <div class="text-danger">{{ form.remote_subnet.errors.0 }}</div>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Security Configuration -->
+                    <div class="mb-4">
+                        <h5 class="border-bottom pb-2">Security Configuration</h5>
+                        
+                        <div class="mb-3">
+                            <div class="form-check">
+                                {{ form.generate_key }}
+                                <label class="form-check-label" for="{{ form.generate_key.id_for_label }}">
+                                    {{ form.generate_key.label }}
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3" id="pskField">
+                            <label for="{{ form.pre_shared_key.id_for_label }}" class="form-label">{{ form.pre_shared_key.label }}</label>
+                            {{ form.pre_shared_key }}
+                            {% if form.pre_shared_key.help_text %}
+                                <div class="form-text">{{ form.pre_shared_key.help_text }}</div>
+                            {% endif %}
+                            {% if form.pre_shared_key.errors %}
+                                <div class="text-danger">{{ form.pre_shared_key.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Advanced Options -->
+                    <div class="mb-4">
+                        <h5 class="border-bottom pb-2">Advanced Options</h5>
+                        
+                        <div class="form-check">
+                            {{ form.auto_start }}
+                            <label class="form-check-label" for="{{ form.auto_start.id_for_label }}">
+                                {{ form.auto_start.label }}
+                            </label>
+                            {% if form.auto_start.help_text %}
+                                <div class="form-text">{{ form.auto_start.help_text }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Form Errors -->
+                    {% if form.non_field_errors %}
+                    <div class="alert alert-danger">
+                        {% for error in form.non_field_errors %}
+                            <div>{{ error }}</div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                    
+                    <!-- Action Buttons -->
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> 
+                            {% if tunnel %}Update Tunnel{% else %}Create Tunnel{% endif %}
+                        </button>
+                        <a href="{% url 'vpn:tunnels_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-info">Configuration Tips</h6>
+            </div>
+            <div class="card-body">
+                <h6>Network Setup</h6>
+                <ul class="small">
+                    <li><strong>Local IP:</strong> This server's public IP address</li>
+                    <li><strong>Remote IP:</strong> The other VPN endpoint's public IP</li>
+                    <li><strong>Subnets:</strong> Use CIDR notation (e.g., 192.168.1.0/24)</li>
+                </ul>
+                
+                <h6>Security</h6>
+                <ul class="small">
+                    <li>Pre-shared keys should be complex and unique</li>
+                    <li>Auto-generation creates a 32-character random key</li>
+                    <li>Keep the key secure and share only with authorized personnel</li>
+                </ul>
+                
+                <h6>Tunnel Types</h6>
+                <ul class="small">
+                    <li><strong>Site-to-Site:</strong> Connect two networks</li>
+                    <li><strong>Road Warrior:</strong> Remote user access</li>
+                    <li><strong>Client VPN:</strong> Individual client connections</li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-warning">Important Notes</h6>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-warning small">
+                    <strong>Before creating the tunnel:</strong>
+                    <ul class="mb-0 mt-2">
+                        <li>Ensure IP forwarding is enabled</li>
+                        <li>Configure appropriate firewall rules</li>
+                        <li>Coordinate with the remote endpoint</li>
+                        <li>Test connectivity between public IPs</li>
+                    </ul>
+                </div>
+                
+                <div class="alert alert-info small">
+                    <strong>After creation:</strong>
+                    <ul class="mb-0 mt-2">
+                        <li>Monitor connection status</li>
+                        <li>Test traffic flow between subnets</li>
+                        <li>Check logs for any issues</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function togglePSKField() {
+    const generateKey = document.querySelector('input[name="generate_key"]');
+    const pskField = document.getElementById('pskField');
+    const pskInput = document.querySelector('input[name="pre_shared_key"]');
+    
+    if (generateKey.checked) {
+        pskField.style.display = 'none';
+        pskInput.required = false;
+    } else {
+        pskField.style.display = 'block';
+        pskInput.required = true;
+    }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    togglePSKField();
+});
+</script>
+{% endblock %}

@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+
+{% block title %}Monitoring - Router Manager{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-chart-line"></i> System Monitoring
+        </h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Monitoring Overview</h6>
+            </div>
+            <div class="card-body">
+                <p>Monitor system performance, network traffic, and service health.</p>
+                
+                <div class="row">
+                    <div class="col-md-4 mb-3">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h6><i class="fas fa-chart-area text-primary"></i> System Metrics</h6>
+                                <p class="text-muted small">CPU, Memory, Disk usage</p>
+                                <a href="{% url 'monitoring:metrics' %}" class="btn btn-primary btn-sm">View Metrics</a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4 mb-3">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h6><i class="fas fa-bell text-warning"></i> Alerts</h6>
+                                <p class="text-muted small">System alerts and notifications</p>
+                                <a href="{% url 'monitoring:alerts_list' %}" class="btn btn-warning btn-sm">View Alerts</a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-4 mb-3">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h6><i class="fas fa-cogs text-success"></i> Services</h6>
+                                <p class="text-muted small">Service status monitoring</p>
+                                <a href="{% url 'monitoring:services_status' %}" class="btn btn-success btn-sm">View Services</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">System Health</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="me-3">
+                        <i class="fas fa-heartbeat fa-2x text-success"></i>
+                    </div>
+                    <div>
+                        <h6 class="mb-0">System Status</h6>
+                        <small class="text-success">Healthy</small>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <div class="small">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Uptime:</span>
+                        <strong>2 days, 4 hours</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Load Average:</span>
+                        <strong>0.45</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="alert alert-info">
+            <h5><i class="fas fa-info-circle"></i> System Monitoring</h5>
+            <p class="mb-0">Monitor your system's performance and health. Set up alerts to be notified of potential issues before they become problems.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

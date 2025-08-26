@@ -1,0 +1,66 @@
+{% extends 'base.html' %}
+
+{% block title %}Network Interfaces - Router Manager{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-ethernet"></i> Network Interfaces
+        </h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                <h6 class="m-0 font-weight-bold text-primary">Interface Configuration</h6>
+                <button class="btn btn-primary btn-sm">
+                    <i class="fas fa-plus"></i> Add Interface
+                </button>
+            </div>
+            <div class="card-body">
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> Network interface configuration will be implemented in future versions.
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Interface</th>
+                                <th>Status</th>
+                                <th>IP Address</th>
+                                <th>Type</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>eth0</strong></td>
+                                <td><span class="badge bg-success">UP</span></td>
+                                <td>192.168.1.253/24</td>
+                                <td>Ethernet</td>
+                                <td>
+                                    <button class="btn btn-sm btn-primary">Configure</button>
+                                    <button class="btn btn-sm btn-secondary">Statistics</button>
+                                </td>
+                            </tr>
+                            <tr>
+                                <td><strong>lo</strong></td>
+                                <td><span class="badge bg-success">UP</span></td>
+                                <td>127.0.0.1/8</td>
+                                <td>Loopback</td>
+                                <td>
+                                    <button class="btn btn-sm btn-secondary" disabled>System Interface</button>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+
+{% block title %}Firewall Management - Router Manager{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-shield-alt"></i> Firewall Management
+        </h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Firewall Overview</h6>
+            </div>
+            <div class="card-body">
+                <p>Manage nftables firewall rules and port forwarding configurations.</p>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h5><i class="fas fa-list text-primary"></i> Firewall Rules</h5>
+                                <p class="text-muted">Configure firewall rules</p>
+                                <a href="{% url 'nftables:rules_list' %}" class="btn btn-primary">Manage Rules</a>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6 mb-3">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h5><i class="fas fa-exchange-alt text-success"></i> Port Forwarding</h5>
+                                <p class="text-muted">Configure port forwarding</p>
+                                <a href="{% url 'nftables:port_forward_list' %}" class="btn btn-success">Port Forward</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Firewall Status</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-flex align-items-center mb-3">
+                    <div class="me-3">
+                        <i class="fas fa-shield-alt fa-2x text-success"></i>
+                    </div>
+                    <div>
+                        <h6 class="mb-0">nftables</h6>
+                        <small class="text-success">Active</small>
+                    </div>
+                </div>
+                
+                <hr>
+                
+                <div class="small">
+                    <div class="d-flex justify-content-between mb-1">
+                        <span>Active Rules:</span>
+                        <strong>5</strong>
+                    </div>
+                    <div class="d-flex justify-content-between">
+                        <span>Port Forwards:</span>
+                        <strong>2</strong>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="alert alert-info">
+            <h5><i class="fas fa-info-circle"></i> Firewall Management</h5>
+            <p class="mb-0">Configure your nftables firewall rules to control network traffic. Always test rules carefully to avoid locking yourself out of the system.</p>
+        </div>
+    </div>
+</div>
+{% endblock %}

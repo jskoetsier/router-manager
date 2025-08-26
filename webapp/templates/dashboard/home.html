@@ -1,0 +1,348 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - Router Manager{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-tachometer-alt"></i> System Dashboard
+        </h1>
+    </div>
+</div>
+
+<!-- System Status Cards -->
+<div class="row mb-4">
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card bg-primary text-white shadow">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="mb-0" id="cpu-usage">
+                            {% if system_status %}{{ system_status.cpu_usage|floatformat:1 }}%{% else %}--{% endif %}
+                        </h4>
+                        <small>CPU Usage</small>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-microchip fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card bg-success text-white shadow">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="mb-0" id="memory-usage">
+                            {% if system_status %}{{ system_status.memory_usage|floatformat:1 }}%{% else %}--{% endif %}
+                        </h4>
+                        <small>Memory Usage</small>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-memory fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card bg-info text-white shadow">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="mb-0" id="disk-usage">
+                            {% if system_status %}{{ system_status.disk_usage|floatformat:1 }}%{% else %}--{% endif %}
+                        </h4>
+                        <small>Disk Usage</small>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-hdd fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-xl-3 col-md-6 mb-4">
+        <div class="card bg-warning text-white shadow">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <h4 class="mb-0">{{ system_info.hostname|default:"--" }}</h4>
+                        <small>Hostname</small>
+                    </div>
+                    <div class="align-self-center">
+                        <i class="fas fa-server fa-2x"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- System Information and Network Interfaces -->
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">Network Interfaces</h6>
+                <button class="btn btn-sm btn-outline-primary" onclick="refreshNetworkInterfaces()">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
+            </div>
+            <div class="card-body">
+                {% if network_interfaces %}
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Interface</th>
+                                <th>Status</th>
+                                <th>IP Address</th>
+                                <th>RX/TX</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for name, interface in network_interfaces.items %}
+                            <tr>
+                                <td>
+                                    <strong>{{ interface.name }}</strong>
+                                    {% if interface.is_up %}
+                                        <span class="badge bg-success ms-2">UP</span>
+                                    {% else %}
+                                        <span class="badge bg-danger ms-2">DOWN</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if interface.speed %}
+                                        {{ interface.speed }} Mbps
+                                    {% else %}
+                                        Unknown
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% for addr in interface.addresses %}
+                                        <div>{{ addr.address }}</div>
+                                    {% empty %}
+                                        <span class="text-muted">No IP assigned</span>
+                                    {% endfor %}
+                                </td>
+                                <td>
+                                    <small>
+                                        <div>RX: {{ interface.bytes_recv }}</div>
+                                        <div>TX: {{ interface.bytes_sent }}</div>
+                                    </small>
+                                </td>
+                                <td>
+                                    <a href="{% url 'network:interface_detail' interface.name %}" class="btn btn-sm btn-primary">
+                                        <i class="fas fa-cog"></i> Configure
+                                    </a>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i> No network interfaces found.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">System Information</h6>
+            </div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <tr>
+                        <td><strong>OS:</strong></td>
+                        <td>{{ system_info.system|default:"--" }} {{ system_info.release|default:"" }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Architecture:</strong></td>
+                        <td>{{ system_info.machine|default:"--" }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>CPU Cores:</strong></td>
+                        <td>{{ system_info.cpu.total_cores|default:"--" }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Memory:</strong></td>
+                        <td>{{ system_info.memory.total|default:"--" }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Disk:</strong></td>
+                        <td>{{ system_info.disk.total|default:"--" }}</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Uptime:</strong></td>
+                        <td>{{ system_info.boot_time|default:"--" }}</td>
+                    </tr>
+                </table>
+                <a href="{% url 'dashboard:system_info' %}" class="btn btn-primary btn-sm">
+                    <i class="fas fa-info-circle"></i> More Details
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity and Alerts -->
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">Recent Alerts</h6>
+                <a href="{% url 'dashboard:alerts' %}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body">
+                {% if recent_alerts %}
+                {% for alert in recent_alerts %}
+                <div class="d-flex align-items-center mb-3">
+                    <div class="me-3">
+                        {% if alert.severity == 'critical' %}
+                            <i class="fas fa-exclamation-circle text-danger"></i>
+                        {% elif alert.severity == 'warning' %}
+                            <i class="fas fa-exclamation-triangle text-warning"></i>
+                        {% elif alert.severity == 'info' %}
+                            <i class="fas fa-info-circle text-info"></i>
+                        {% else %}
+                            <i class="fas fa-circle text-secondary"></i>
+                        {% endif %}
+                    </div>
+                    <div class="flex-grow-1">
+                        <h6 class="mb-1">{{ alert.title }}</h6>
+                        <p class="mb-1 text-muted small">{{ alert.message|truncatewords:15 }}</p>
+                        <small class="text-muted">{{ alert.timestamp|timesince }} ago</small>
+                    </div>
+                    <div>
+                        <a href="{% url 'dashboard:acknowledge_alert' alert.id %}" class="btn btn-sm btn-outline-secondary">
+                            <i class="fas fa-check"></i>
+                        </a>
+                    </div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="text-center text-muted">
+                    <i class="fas fa-check-circle fa-3x mb-3"></i>
+                    <p>No active alerts</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3 d-flex flex-row align-items-center justify-content-between">
+                <h6 class="m-0 font-weight-bold text-primary">Recent Activity</h6>
+                <a href="{% url 'dashboard:activity_log' %}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body">
+                {% if recent_activity %}
+                {% for activity in recent_activity %}
+                <div class="d-flex align-items-center mb-3">
+                    <div class="me-3">
+                        {% if activity.success %}
+                            <i class="fas fa-check-circle text-success"></i>
+                        {% else %}
+                            <i class="fas fa-times-circle text-danger"></i>
+                        {% endif %}
+                    </div>
+                    <div class="flex-grow-1">
+                        <h6 class="mb-1">{{ activity.action }}</h6>
+                        <p class="mb-1 text-muted small">by {{ activity.user.username }}</p>
+                        <small class="text-muted">{{ activity.timestamp|timesince }} ago</small>
+                    </div>
+                </div>
+                {% endfor %}
+                {% else %}
+                <div class="text-center text-muted">
+                    <i class="fas fa-history fa-3x mb-3"></i>
+                    <p>No recent activity</p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Quick Actions</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 text-center mb-3">
+                        <a href="{% url 'nftables:home' %}" class="btn btn-outline-primary btn-lg w-100">
+                            <i class="fas fa-shield-alt fa-2x d-block mb-2"></i>
+                            Firewall Rules
+                        </a>
+                    </div>
+                    <div class="col-md-3 text-center mb-3">
+                        <a href="{% url 'network:home' %}" class="btn btn-outline-success btn-lg w-100">
+                            <i class="fas fa-network-wired fa-2x d-block mb-2"></i>
+                            Network Config
+                        </a>
+                    </div>
+                    <div class="col-md-3 text-center mb-3">
+                        <a href="{% url 'vpn:home' %}" class="btn btn-outline-info btn-lg w-100">
+                            <i class="fas fa-key fa-2x d-block mb-2"></i>
+                            VPN Tunnels
+                        </a>
+                    </div>
+                    <div class="col-md-3 text-center mb-3">
+                        <a href="{% url 'monitoring:home' %}" class="btn btn-outline-warning btn-lg w-100">
+                            <i class="fas fa-chart-line fa-2x d-block mb-2"></i>
+                            Monitoring
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Real-time status updates
+function updateSystemStatus() {
+    fetch('{% url "dashboard:status_api" %}')
+        .then(response => response.json())
+        .then(data => {
+            if (data.error) {
+                console.error('Status update error:', data.error);
+                return;
+            }
+            
+            document.getElementById('cpu-usage').textContent = data.cpu_usage.toFixed(1) + '%';
+            document.getElementById('memory-usage').textContent = data.memory_usage.toFixed(1) + '%';
+            document.getElementById('disk-usage').textContent = data.disk_usage.toFixed(1) + '%';
+        })
+        .catch(error => {
+            console.error('Status fetch error:', error);
+        });
+}
+
+// Update status every 30 seconds
+setInterval(updateSystemStatus, 30000);
+
+function refreshNetworkInterfaces() {
+    location.reload();
+}
+</script>
+{% endblock %}

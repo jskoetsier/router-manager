@@ -1,0 +1,148 @@
+{% extends 'base.html' %}
+
+{% block title %}System Alerts - Router Manager{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-bell"></i> System Alerts
+        </h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header py-3 d-flex justify-content-between align-items-center">
+                <h6 class="m-0 font-weight-bold text-primary">Alert Management</h6>
+                
+                <div class="btn-group" role="group">
+                    <a href="?acknowledged=false" class="btn btn-sm {% if ack_filter == 'false' %}btn-warning{% else %}btn-outline-warning{% endif %}">
+                        Active Alerts
+                    </a>
+                    <a href="?acknowledged=true" class="btn btn-sm {% if ack_filter == 'true' %}btn-success{% else %}btn-outline-success{% endif %}">
+                        Acknowledged
+                    </a>
+                    <a href="{% url 'dashboard:alerts' %}" class="btn btn-sm {% if not ack_filter %}btn-primary{% else %}btn-outline-primary{% endif %}">
+                        All Alerts
+                    </a>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if alerts %}
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Severity</th>
+                                <th>Alert</th>
+                                <th>Time</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for alert in alerts %}
+                            <tr class="{% if alert.severity == 'critical' %}table-danger{% elif alert.severity == 'warning' %}table-warning{% elif alert.severity == 'error' %}table-danger{% endif %}">
+                                <td>
+                                    {% if alert.severity == 'critical' %}
+                                        <span class="badge bg-danger">Critical</span>
+                                    {% elif alert.severity == 'warning' %}
+                                        <span class="badge bg-warning text-dark">Warning</span>
+                                    {% elif alert.severity == 'error' %}
+                                        <span class="badge bg-danger">Error</span>
+                                    {% elif alert.severity == 'info' %}
+                                        <span class="badge bg-info">Info</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <strong>{{ alert.title }}</strong>
+                                    <br>
+                                    <small class="text-muted">{{ alert.message|truncatewords:20 }}</small>
+                                </td>
+                                <td>
+                                    <small>{{ alert.timestamp|date:"M d, Y" }}</small>
+                                    <br>
+                                    <small class="text-muted">{{ alert.timestamp|time:"H:i" }}</small>
+                                </td>
+                                <td>
+                                    {% if alert.acknowledged %}
+                                        <span class="badge bg-success">Acknowledged</span>
+                                        {% if alert.acknowledged_by %}
+                                            <br><small class="text-muted">by {{ alert.acknowledged_by.username }}</small>
+                                        {% endif %}
+                                    {% else %}
+                                        <span class="badge bg-warning text-dark">Active</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if not alert.acknowledged %}
+                                        <a href="{% url 'dashboard:acknowledge_alert' alert.id %}" 
+                                           class="btn btn-sm btn-success"
+                                           onclick="return confirm('Acknowledge this alert?')">
+                                            <i class="fas fa-check"></i> Acknowledge
+                                        </a>
+                                    {% else %}
+                                        <span class="text-muted">
+                                            <i class="fas fa-check-circle"></i> Done
+                                        </span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                
+                <!-- Pagination -->
+                {% if alerts.has_other_pages %}
+                <nav aria-label="Alert pagination">
+                    <ul class="pagination justify-content-center">
+                        {% if alerts.has_previous %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ alerts.previous_page_number }}{% if severity_filter %}&severity={{ severity_filter }}{% endif %}{% if ack_filter %}&acknowledged={{ ack_filter }}{% endif %}">Previous</a>
+                            </li>
+                        {% endif %}
+                        
+                        {% for num in alerts.paginator.page_range %}
+                            {% if alerts.number == num %}
+                                <li class="page-item active">
+                                    <span class="page-link">{{ num }}</span>
+                                </li>
+                            {% elif num > alerts.number|add:'-3' and num < alerts.number|add:'3' %}
+                                <li class="page-item">
+                                    <a class="page-link" href="?page={{ num }}{% if severity_filter %}&severity={{ severity_filter }}{% endif %}{% if ack_filter %}&acknowledged={{ ack_filter }}{% endif %}">{{ num }}</a>
+                                </li>
+                            {% endif %}
+                        {% endfor %}
+                        
+                        {% if alerts.has_next %}
+                            <li class="page-item">
+                                <a class="page-link" href="?page={{ alerts.next_page_number }}{% if severity_filter %}&severity={{ severity_filter }}{% endif %}{% if ack_filter %}&acknowledged={{ ack_filter }}{% endif %}">Next</a>
+                            </li>
+                        {% endif %}
+                    </ul>
+                </nav>
+                {% endif %}
+                
+                {% else %}
+                <div class="text-center">
+                    <i class="fas fa-check-circle fa-3x text-success mb-3"></i>
+                    <h5>No Alerts</h5>
+                    <p class="text-muted">
+                        {% if ack_filter == 'false' %}
+                            No active alerts found. Your system is running smoothly!
+                        {% elif ack_filter == 'true' %}
+                            No acknowledged alerts found.
+                        {% else %}
+                            No alerts have been generated yet.
+                        {% endif %}
+                    </p>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

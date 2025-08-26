@@ -1,6 +1,6 @@
 # Router Manager
 
-**Version 1.0.0** - A comprehensive web-based router management system for RHEL 9 and Rocky Linux 9 distributions. This application provides an intuitive web interface for managing network configurations, firewall rules, VPN tunnels, and system monitoring.
+**Version 1.1.0** - A comprehensive web-based router management system for RHEL 9 and Rocky Linux 9 distributions. This application provides an intuitive web interface for managing network configurations, firewall rules, VPN tunnels, and system monitoring.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
@@ -31,24 +31,6 @@
 - **Architecture**: x86_64, ARM64 (aarch64)
 
 ## 🏗️ Architecture
-
-```
-router-manager/
-├── 📁 webapp/                    # Django web application
-│   ├── 📁 router_manager/       # Main Django project settings
-│   ├── 📁 dashboard/            # System dashboard and monitoring
-│   ├── 📁 nftables_mgr/         # Firewall and nftables management
-│   ├── 📁 network/              # Network interface configuration
-│   ├── 📁 vpn/                  # IPSec VPN tunnel management
-│   ├── 📁 monitoring/           # Advanced system monitoring
-│   ├── 📁 templates/            # HTML templates
-│   └── 📁 static/               # CSS, JavaScript, images
-├── 📁 scripts/                  # Installation and management scripts
-├── 📄 CHANGELOG.md             # Version history and changes
-├── 📄 ROADMAP.md               # Future development plans
-└── 📄 README.md                # This file
-```
-
 ## ⚡ Quick Start
 
 ### 🔧 Prerequisites
@@ -57,36 +39,69 @@ router-manager/
 - **Network**: Internet connection for package installation
 - **Hardware**: Minimum 2GB RAM, 10GB disk space
 
-### 🚀 One-Command Installation
+### 🚀 Git-Based Deployment (NEW in v1.1.0)
 
-#### Rocky Linux 9:
+#### 🌐 Direct from Git Repository:
 ```bash
-curl -fsSL https://raw.githubusercontent.com/your-org/router-manager/main/scripts/install-rocky9.sh | sudo bash
+# One-liner installation from git
+curl -fsSL https://raw.githubusercontent.com/jskoetsier/router-manager/main/scripts/install-from-git.sh | sudo bash
 ```
 
-#### RHEL 9:
+#### 📡 Remote Deployment:
 ```bash
-curl -fsSL https://raw.githubusercontent.com/your-org/router-manager/main/scripts/install-rhel9.sh | sudo bash
+# Deploy to remote server via SSH
+git clone https://github.com/jskoetsier/router-manager.git
+cd router-manager
+./scripts/deploy-remote.sh --host 192.168.1.100 --user root
+```
+
+#### 🔄 Automatic Updates:
+```bash
+# Update existing installation
+sudo /usr/local/bin/router-manager-update
 ```
 
 ### 📥 Manual Installation
 
+#### Rocky Linux 9:
+```bash
+curl -fsSL https://raw.githubusercontent.com/jskoetsier/router-manager/main/scripts/install-rocky9.sh | sudo bash
+```
+
+#### RHEL 9:
+```bash
+curl -fsSL https://raw.githubusercontent.com/jskoetsier/router-manager/main/scripts/install-rhel9.sh | sudo bash
+```
+
+### 🔧 Advanced Installation Options
+
 1. **Clone the repository**:
 ```bash
-git clone https://github.com/your-org/router-manager.git
+git clone https://github.com/jskoetsier/router-manager.git
 cd router-manager
 ```
 
-2. **Run installation script**:
+2. **Git-based installation with options**:
 ```bash
-# For Rocky Linux 9
-sudo ./scripts/install-rocky9.sh
+# Install from specific branch
+sudo ./scripts/install-from-git.sh --branch develop
 
-# For RHEL 9  
-sudo ./scripts/install-rhel9.sh
+# Install from custom repository
+sudo ./scripts/install-from-git.sh --repo-url https://github.com/yourfork/router-manager.git
 ```
 
-3. **Access the web interface**:
+3. **Remote deployment with custom options**:
+```bash
+# Deploy to multiple hosts
+for host in 192.168.1.10 192.168.1.11 192.168.1.12; do
+  ./scripts/deploy-remote.sh --host $host --user admin
+done
+
+# Deploy from specific branch
+./scripts/deploy-remote.sh --host 10.0.0.100 --branch production
+```
+
+### 🖥️ Access Web Interface
 ```
 https://your-server-ip
 ```
@@ -106,7 +121,7 @@ https://your-server-ip
 
 ### 🌐 Network Configuration
 - **IP Forwarding**: Enable/disable IPv4 and IPv6 forwarding
-- **NAT Configuration**: Set up masquerading for internet sharing  
+- **NAT Configuration**: Set up masquerading for internet sharing
 - **Interface Management**: Configure network interfaces and IP addresses
 - **Routing**: Manage static routes and routing policies
 

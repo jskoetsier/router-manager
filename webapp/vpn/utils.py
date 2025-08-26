@@ -77,16 +77,20 @@ def get_strongswan_status():
 
 
 def create_ipsec_config(
-    tunnel_name, local_ip, remote_ip, local_subnet, remote_subnet, psk
+    tunnel_name, local_id, remote_id, local_subnet, remote_subnet, psk
 ):
-    """Create IPSec configuration files"""
+    """Create IPSec configuration files supporting IPs, hostnames, and IKE IDs"""
     try:
-        # Create ipsec.conf entry
+        # Determine if we're using IDs or IP addresses
+        local_directive = "leftid" if not validate_ip_address(local_id) else "left"
+        remote_directive = "rightid" if not validate_ip_address(remote_id) else "right"
+        
+        # Create ipsec.conf entry with flexible identity support
         ipsec_conf_entry = f"""
 conn {tunnel_name}
-    left={local_ip}
+    {local_directive}={local_id}
     leftsubnet={local_subnet}
-    right={remote_ip}
+    {remote_directive}={remote_id}
     rightsubnet={remote_subnet}
     authby=secret
     auto=start
@@ -97,10 +101,19 @@ conn {tunnel_name}
     dpdaction=restart
     dpddelay=30s
     dpdtimeout=120s
+    rekey=yes
+    margintime=9m
+    keylife=20m
+    rekeymargin=3m
 """
 
-        # Create ipsec.secrets entry
-        ipsec_secrets_entry = f'{local_ip} {remote_ip} : PSK "{psk}"\n'
+        # Create ipsec.secrets entry - support both IP and ID-based authentication
+        if validate_ip_address(local_id) and validate_ip_address(remote_id):
+            # Both are IP addresses - use traditional format
+            ipsec_secrets_entry = f'{local_id} {remote_id} : PSK "{psk}"\n'
+        else:
+            # At least one is a hostname/ID - use %any for more flexible matching
+            ipsec_secrets_entry = f'%any %any : PSK "{psk}"\n'
 
         return {
             "success": True,

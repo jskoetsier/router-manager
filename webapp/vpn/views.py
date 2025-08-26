@@ -77,8 +77,8 @@ def add_tunnel(request):
                 # Create StrongSwan configuration
                 config = create_ipsec_config(
                     tunnel_name=tunnel.name,
-                    local_ip=tunnel.local_ip,
-                    remote_ip=tunnel.remote_ip,
+                    local_id=tunnel.local_id,
+                    remote_id=tunnel.remote_id,
                     local_subnet=tunnel.local_subnet,
                     remote_subnet=tunnel.remote_subnet,
                     psk=tunnel.pre_shared_key
@@ -283,8 +283,8 @@ def quick_setup(request):
                 tunnel = VPNTunnel.objects.create(
                     name=form.cleaned_data['tunnel_name'],
                     tunnel_type='site-to-site',
-                    local_ip='192.168.1.253',  # Default local IP
-                    remote_ip=form.cleaned_data['remote_ip'],
+                    local_id='192.168.1.253',  # Default local ID
+                    remote_id=form.cleaned_data['remote_ip'],
                     local_subnet='192.168.1.0/24',  # Default local subnet
                     remote_subnet=form.cleaned_data['remote_subnet'],
                     pre_shared_key='auto-generated-key',  # Will be generated

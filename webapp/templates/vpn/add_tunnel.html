@@ -1,28 +1,249 @@
 {% extends 'base.html' %}
 
-{% block title %}Add VPN Tunnel - Router Manager{% endblock %}
+{% block title %}{{ page_title|default:"Add VPN Tunnel" }} - Router Manager{% endblock %}
 
 {% block content %}
 <div class="row">
     <div class="col-12">
-        <h1 class="mb-4">
-            <i class="fas fa-plus"></i> Add VPN Tunnel
-        </h1>
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1>
+                <i class="fas fa-plus"></i> {{ page_title|default:"Add VPN Tunnel" }}
+            </h1>
+            <a href="{% url 'vpn:tunnels_list' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Tunnels
+            </a>
+        </div>
     </div>
 </div>
 
 <div class="row">
-    <div class="col-12">
+    <div class="col-lg-8">
         <div class="card shadow">
             <div class="card-header py-3">
-                <h6 class="m-0 font-weight-bold text-primary">New VPN Tunnel</h6>
+                <h6 class="m-0 font-weight-bold text-primary">
+                    <i class="fas fa-cogs"></i> Tunnel Configuration
+                </h6>
             </div>
             <div class="card-body">
-                <div class="alert alert-info">
-                    <i class="fas fa-info-circle"></i> Add VPN tunnel functionality will be implemented in future versions.
-                </div>
+                {% if form.errors %}
+                    <div class="alert alert-danger">
+                        <h6><i class="fas fa-exclamation-triangle"></i> Please correct the following errors:</h6>
+                        {% for field, errors in form.errors.items %}
+                            <div><strong>{{ field }}:</strong> {{ errors|join:", " }}</div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+
+                <form method="post" novalidate>
+                    {% csrf_token %}
+                    
+                    <!-- Basic Information -->
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.name.id_for_label }}" class="form-label">{{ form.name.label }}</label>
+                                {{ form.name }}
+                                {% if form.name.help_text %}
+                                    <div class="form-text">{{ form.name.help_text }}</div>
+                                {% endif %}
+                                {% if form.name.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.name.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.tunnel_type.id_for_label }}" class="form-label">{{ form.tunnel_type.label }}</label>
+                                {{ form.tunnel_type }}
+                                {% if form.tunnel_type.help_text %}
+                                    <div class="form-text">{{ form.tunnel_type.help_text }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.description.id_for_label }}" class="form-label">{{ form.description.label }}</label>
+                        {{ form.description }}
+                        {% if form.description.help_text %}
+                            <div class="form-text">{{ form.description.help_text }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Connection Settings -->
+                    <h6 class="mt-4 mb-3 text-primary">
+                        <i class="fas fa-network-wired"></i> Connection Settings
+                    </h6>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.local_id.id_for_label }}" class="form-label">{{ form.local_id.label }}</label>
+                                {{ form.local_id }}
+                                {% if form.local_id.help_text %}
+                                    <div class="form-text">{{ form.local_id.help_text }}</div>
+                                {% endif %}
+                                {% if form.local_id.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.local_id.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.remote_id.id_for_label }}" class="form-label">{{ form.remote_id.label }}</label>
+                                {{ form.remote_id }}
+                                {% if form.remote_id.help_text %}
+                                    <div class="form-text">{{ form.remote_id.help_text }}</div>
+                                {% endif %}
+                                {% if form.remote_id.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.remote_id.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Network Settings -->
+                    <h6 class="mt-4 mb-3 text-primary">
+                        <i class="fas fa-sitemap"></i> Network Settings
+                    </h6>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.local_subnet.id_for_label }}" class="form-label">{{ form.local_subnet.label }}</label>
+                                {{ form.local_subnet }}
+                                {% if form.local_subnet.help_text %}
+                                    <div class="form-text">{{ form.local_subnet.help_text }}</div>
+                                {% endif %}
+                                {% if form.local_subnet.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.local_subnet.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="{{ form.remote_subnet.id_for_label }}" class="form-label">{{ form.remote_subnet.label }}</label>
+                                {{ form.remote_subnet }}
+                                {% if form.remote_subnet.help_text %}
+                                    <div class="form-text">{{ form.remote_subnet.help_text }}</div>
+                                {% endif %}
+                                {% if form.remote_subnet.errors %}
+                                    <div class="invalid-feedback d-block">{{ form.remote_subnet.errors|join:", " }}</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Authentication -->
+                    <h6 class="mt-4 mb-3 text-primary">
+                        <i class="fas fa-key"></i> Authentication
+                    </h6>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            {{ form.generate_key }}
+                            <label class="form-check-label" for="{{ form.generate_key.id_for_label }}">
+                                {{ form.generate_key.label }}
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="mb-3" id="psk-field">
+                        <label for="{{ form.pre_shared_key.id_for_label }}" class="form-label">{{ form.pre_shared_key.label }}</label>
+                        {{ form.pre_shared_key }}
+                        {% if form.pre_shared_key.help_text %}
+                            <div class="form-text">{{ form.pre_shared_key.help_text }}</div>
+                        {% endif %}
+                        {% if form.pre_shared_key.errors %}
+                            <div class="invalid-feedback d-block">{{ form.pre_shared_key.errors|join:", " }}</div>
+                        {% endif %}
+                    </div>
+
+                    <!-- Advanced Options -->
+                    <h6 class="mt-4 mb-3 text-primary">
+                        <i class="fas fa-sliders-h"></i> Advanced Options
+                    </h6>
+                    
+                    <div class="mb-3">
+                        <div class="form-check">
+                            {{ form.auto_start }}
+                            <label class="form-check-label" for="{{ form.auto_start.id_for_label }}">
+                                {{ form.auto_start.label }}
+                            </label>
+                            {% if form.auto_start.help_text %}
+                                <div class="form-text">{{ form.auto_start.help_text }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <!-- Submit Buttons -->
+                    <hr>
+                    <div class="d-flex justify-content-end gap-2">
+                        <a href="{% url 'vpn:tunnels_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> {% if tunnel %}Update{% else %}Create{% endif %} Tunnel
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Help Panel -->
+    <div class="col-lg-4">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-info">
+                    <i class="fas fa-info-circle"></i> Configuration Help
+                </h6>
+            </div>
+            <div class="card-body">
+                <h6>Connection Types:</h6>
+                <ul class="small">
+                    <li><strong>Site-to-Site:</strong> Connect two networks permanently</li>
+                    <li><strong>Road Warrior:</strong> Mobile clients connecting to network</li>
+                    <li><strong>Client VPN:</strong> Individual client connections</li>
+                </ul>
+                
+                <h6 class="mt-3">Identity Types:</h6>
+                <ul class="small">
+                    <li><strong>IP Address:</strong> 192.168.1.1</li>
+                    <li><strong>Hostname:</strong> vpn.example.com</li>
+                    <li><strong>FQDN:</strong> gateway.branch.company.com</li>
+                    <li><strong>Email:</strong> gateway@company.com</li>
+                </ul>
+
+                <h6 class="mt-3">Security Notes:</h6>
+                <ul class="small">
+                    <li>Use strong pre-shared keys (32+ characters)</li>
+                    <li>Non-overlapping subnets for local/remote networks</li>
+                    <li>Consider using hostnames for dynamic IP scenarios</li>
+                </ul>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+function togglePSKField() {
+    const generateCheckbox = document.getElementById('{{ form.generate_key.id_for_label }}');
+    const pskField = document.getElementById('psk-field');
+    const pskInput = document.getElementById('{{ form.pre_shared_key.id_for_label }}');
+    
+    if (generateCheckbox.checked) {
+        pskField.style.display = 'none';
+        pskInput.required = false;
+    } else {
+        pskField.style.display = 'block';
+        pskInput.required = true;
+    }
+}
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    togglePSKField();
+});
+</script>
 {% endblock %}

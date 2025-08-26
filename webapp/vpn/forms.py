@@ -10,22 +10,24 @@ from .utils import validate_ip_address, validate_subnet, generate_psk
 class VPNTunnelForm(forms.ModelForm):
     """Form for creating/editing VPN tunnels"""
 
-    # Custom fields for easier input
-    local_ip = forms.GenericIPAddressField(
-        label="Local IP Address",
-        help_text="IP address of this router/server",
+    # Custom fields for easier input - supporting IPs, hostnames, and IKE IDs
+    local_id = forms.CharField(
+        label="Local Identity",
+        max_length=255,
+        help_text="Local identity: IP address, hostname, FQDN, or email (e.g., 192.168.1.1, vpn.local.com, gateway@company.com)",
         widget=forms.TextInput(attrs={
             'class': 'form-control',
-            'placeholder': '192.168.1.1'
+            'placeholder': '192.168.1.1 or vpn.local.com'
         })
     )
 
-    remote_ip = forms.GenericIPAddressField(
-        label="Remote IP Address",
-        help_text="IP address of the remote VPN endpoint",
+    remote_id = forms.CharField(
+        label="Remote Identity", 
+        max_length=255,
+        help_text="Remote identity: IP address, hostname, FQDN, or email (e.g., 203.0.113.1, remote.company.com, gateway@remote.com)",
         widget=forms.TextInput(attrs={
             'class': 'form-control',
-            'placeholder': '203.0.113.1'
+            'placeholder': '203.0.113.1 or remote.company.com'
         })
     )
 
@@ -86,7 +88,7 @@ class VPNTunnelForm(forms.ModelForm):
         model = VPNTunnel
         fields = [
             'name', 'description', 'tunnel_type',
-            'local_ip', 'remote_ip', 'local_subnet',
+            'local_id', 'remote_id', 'local_subnet',
             'remote_subnet', 'pre_shared_key', 'auto_start'
         ]
         widgets = {

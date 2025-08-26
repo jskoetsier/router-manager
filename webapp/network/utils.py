@@ -148,11 +148,16 @@ def get_nat_status():
             nat_enabled = "chain postrouting" in result["stdout"]
             return {"nat_enabled": nat_enabled, "nat_rules": result["stdout"]}
         else:
-            return {
-                "nat_enabled": False,
-                "nat_rules": "",
-                "error": result.get("error", "NAT table not found"),
-            }
+            # If table doesn't exist, that's normal - NAT is just not configured
+            if "No such file or directory" in result.get("stderr", "") or \
+               "does not exist" in result.get("stderr", ""):
+                return {"nat_enabled": False, "nat_rules": ""}
+            else:
+                return {
+                    "nat_enabled": False,
+                    "nat_rules": "",
+                    "error": result.get("error", "NAT table not found"),
+                }
     except Exception as e:
         return {"nat_enabled": False, "nat_rules": "", "error": str(e)}
 
@@ -253,7 +258,11 @@ def get_network_interfaces():
 
         # Get IP addresses for each interface
         for interface_name in interfaces.keys():
-            result = run_command(["ip", "addr", "show", interface_name])
+            # Handle container-style interface names like eth0@if35
+            # For ip addr command, we need to use just the base name (eth0)
+            query_name = interface_name.split('@')[0] if '@' in interface_name else interface_name
+            
+            result = run_command(["ip", "addr", "show", query_name])
             if result["success"]:
                 for line in result["stdout"].split("\n"):
                     if "inet " in line and not line.strip().startswith("inet 127."):

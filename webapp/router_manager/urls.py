@@ -10,6 +10,7 @@ from django.views.generic import RedirectView
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("accounts/", include("django.contrib.auth.urls")),  # Add Django auth URLs
     path("", RedirectView.as_view(url="/dashboard/", permanent=False)),
     path("dashboard/", include("dashboard.urls")),
     path("firewall/", include("nftables_mgr.urls")),

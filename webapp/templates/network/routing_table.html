@@ -11,18 +11,246 @@
     </div>
 </div>
 
+{% if routes.error %}
+<div class="row">
+    <div class="col-12">
+        <div class="alert alert-danger">
+            <i class="fas fa-exclamation-triangle"></i> Error loading routing table: {{ routes.error }}
+        </div>
+    </div>
+</div>
+{% else %}
+
+<!-- IPv4 Routes -->
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">IPv4 Routes</h6>
+            </div>
+            <div class="card-body">
+                {% if routes.ipv4_routes %}
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Destination</th>
+                                <th>Gateway</th>
+                                <th>Interface</th>
+                                <th>Protocol</th>
+                                <th>Metric</th>
+                                <th>Full Route</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for route in routes.ipv4_routes %}
+                            <tr>
+                                <td>
+                                    {% if "default" in route %}
+                                        <span class="badge bg-primary">Default</span>
+                                    {% elif "/" in route %}
+                                        {% for part in route.split %}
+                                            {% if "/" in part and not "dev" in part and not "via" in part %}
+                                                {{ part }}
+                                                {% break %}
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if "via" in route %}
+                                        {% for part in route.split %}
+                                            {% if "via" == part %}
+                                                {{ route.split|slice:":10"|join:" "|cut:"via "|cut:" dev" }}
+                                                {% break %}
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% else %}
+                                        <span class="text-muted">Direct</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if "dev" in route %}
+                                        {% for part in route.split %}
+                                            {% if "dev" == part %}
+                                                <code>{{ route.split|slice:":20"|join:" "|cut:"dev "|truncatewords:1 }}</code>
+                                                {% break %}
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if "proto" in route %}
+                                        <span class="badge bg-info">
+                                            {% for part in route.split %}
+                                                {% if "proto" == part %}
+                                                    {{ route.split|slice:":20"|join:" "|cut:"proto "|truncatewords:1 }}
+                                                    {% break %}
+                                                {% endif %}
+                                            {% endfor %}
+                                        </span>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if "metric" in route %}
+                                        {% for part in route.split %}
+                                            {% if "metric" == part %}
+                                                {{ route.split|slice:":20"|join:" "|cut:"metric "|truncatewords:1 }}
+                                                {% break %}
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td><small class="text-muted">{{ route }}</small></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i> No IPv4 routes found.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- IPv6 Routes -->
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">IPv6 Routes</h6>
+            </div>
+            <div class="card-body">
+                {% if routes.ipv6_routes %}
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Destination</th>
+                                <th>Gateway</th>
+                                <th>Interface</th>
+                                <th>Protocol</th>
+                                <th>Metric</th>
+                                <th>Full Route</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for route in routes.ipv6_routes %}
+                            <tr>
+                                <td>
+                                    {% if "default" in route %}
+                                        <span class="badge bg-primary">Default</span>
+                                    {% elif "/" in route %}
+                                        {% for part in route.split %}
+                                            {% if "/" in part and not "dev" in part and not "via" in part %}
+                                                {{ part }}
+                                                {% break %}
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if "via" in route %}
+                                        {% for part in route.split %}
+                                            {% if "via" == part %}
+                                                {{ route.split|slice:":10"|join:" "|cut:"via "|cut:" dev" }}
+                                                {% break %}
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% else %}
+                                        <span class="text-muted">Direct</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if "dev" in route %}
+                                        {% for part in route.split %}
+                                            {% if "dev" == part %}
+                                                <code>{{ route.split|slice:":20"|join:" "|cut:"dev "|truncatewords:1 }}</code>
+                                                {% break %}
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if "proto" in route %}
+                                        <span class="badge bg-info">
+                                            {% for part in route.split %}
+                                                {% if "proto" == part %}
+                                                    {{ route.split|slice:":20"|join:" "|cut:"proto "|truncatewords:1 }}
+                                                    {% break %}
+                                                {% endif %}
+                                            {% endfor %}
+                                        </span>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if "metric" in route %}
+                                        {% for part in route.split %}
+                                            {% if "metric" == part %}
+                                                {{ route.split|slice:":20"|join:" "|cut:"metric "|truncatewords:1 }}
+                                                {% break %}
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td><small class="text-muted">{{ route }}</small></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> No IPv6 routes found.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Route Summary -->
 <div class="row">
     <div class="col-12">
         <div class="card shadow">
             <div class="card-header py-3">
-                <h6 class="m-0 font-weight-bold text-primary">Network Routes</h6>
+                <h6 class="m-0 font-weight-bold text-primary">Route Summary</h6>
             </div>
             <div class="card-body">
-                <div class="alert alert-info">
-                    <i class="fas fa-info-circle"></i> Routing table management will be implemented in future versions.
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>IPv4 Routes:</h6>
+                        <span class="badge bg-primary">{{ routes.ipv4_routes|length }}</span>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>IPv6 Routes:</h6>
+                        <span class="badge bg-info">{{ routes.ipv6_routes|length }}</span>
+                    </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+{% endif %}
 {% endblock %}

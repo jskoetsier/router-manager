@@ -15,7 +15,15 @@ def home(request):
 @login_required
 def rules_list(request):
     """List firewall rules"""
-    return render(request, "nftables/rules_list.html")
+    from network.utils import get_nftables_rules
+    
+    # Get current nftables rules
+    nftables_info = get_nftables_rules()
+    
+    context = {
+        'nftables_info': nftables_info,
+    }
+    return render(request, "nftables/rules_list.html", context)
 
 
 @login_required

@@ -13,7 +13,7 @@
 
 <div class="row">
     <div class="col-12">
-        <div class="card shadow">
+        <div class="card shadow mb-4">
             <div class="card-header py-3 d-flex justify-content-between align-items-center">
                 <h6 class="m-0 font-weight-bold text-primary">nftables Rules</h6>
                 <a href="{% url 'nftables:add_rule' %}" class="btn btn-primary btn-sm">
@@ -21,10 +21,89 @@
                 </a>
             </div>
             <div class="card-body">
+                {% if nftables_info.error %}
+                <div class="alert alert-danger">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    Error loading nftables rules: {{ nftables_info.error }}
+                </div>
+                {% else %}
+                <div class="mb-3">
+                    <h6>Rule Summary:</h6>
+                    <span class="badge bg-info">Total Rules: {{ nftables_info.rule_count }}</span>
+                </div>
+
+                {% if nftables_info.rules %}
+                <h6 class="mb-3">Current nftables Configuration:</h6>
+                <div class="bg-light p-3 border rounded">
+                    <pre class="mb-0"
+                        style="max-height: 500px; overflow-y: auto;"><code>{{ nftables_info.rules }}</code></pre>
+                </div>
+                {% else %}
                 <div class="alert alert-info">
-                    <i class="fas fa-info-circle"></i> Firewall rules management will be implemented in future versions.
+                    <i class="fas fa-info-circle"></i> No nftables rules are currently configured.
+                </div>
+                {% endif %}
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Quick Actions</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h6><i class="fas fa-plus text-primary"></i> Add Rule</h6>
+                                <p class="text-muted small">Create new firewall rule</p>
+                                <a href="{% url 'nftables:add_rule' %}" class="btn btn-sm btn-primary">Add Rule</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h6><i class="fas fa-share text-success"></i> Port Forward</h6>
+                                <p class="text-muted small">Manage port forwarding</p>
+                                <a href="{% url 'nftables:port_forward_list' %}" class="btn btn-sm btn-success">Port
+                                    Forward</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h6><i class="fas fa-home text-info"></i> nftables Home</h6>
+                                <p class="text-muted small">Back to nftables overview</p>
+                                <a href="{% url 'nftables:home' %}" class="btn btn-sm btn-info">nftables Home</a>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Help Information -->
+<div class="row">
+    <div class="col-12">
+        <div class="alert alert-info">
+            <h6><i class="fas fa-info-circle"></i> About nftables Rules</h6>
+            <p class="mb-2">This page shows the current nftables firewall configuration. nftables is the modern Linux
+                firewall framework.</p>
+            <ul class="mb-0">
+                <li><strong>Tables:</strong> Organize related rules (filter, nat, etc.)</li>
+                <li><strong>Chains:</strong> Process packets at specific points (input, output, forward)</li>
+                <li><strong>Rules:</strong> Define what to do with matching packets (accept, drop, etc.)</li>
+            </ul>
         </div>
     </div>
 </div>

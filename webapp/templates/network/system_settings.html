@@ -11,16 +11,163 @@
     </div>
 </div>
 
+<!-- Messages -->
+{% if messages %}
+    <div class="row">
+        <div class="col-12">
+            {% for message in messages %}
+                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+{% endif %}
+
+<div class="row">
+    <!-- IP Forwarding Settings -->
+    <div class="col-md-6">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">IP Forwarding</h6>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% url 'network:system_settings' %}">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <h6>Current Status:</h6>
+                        <div class="row">
+                            <div class="col-6">
+                                <span class="badge bg-{{ forwarding_status.ipv4_forwarding|yesno:'success,danger' }}">
+                                    IPv4: {{ forwarding_status.ipv4_forwarding|yesno:'Enabled,Disabled' }}
+                                </span>
+                            </div>
+                            <div class="col-6">
+                                <span class="badge bg-{{ forwarding_status.ipv6_forwarding|yesno:'success,danger' }}">
+                                    IPv6: {{ forwarding_status.ipv6_forwarding|yesno:'Enabled,Disabled' }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="ipv4_forwarding" id="ipv4_forwarding" 
+                               {% if forwarding_status.ipv4_forwarding %}checked{% endif %}>
+                        <label class="form-check-label" for="ipv4_forwarding">
+                            Enable IPv4 Forwarding
+                        </label>
+                    </div>
+
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="ipv6_forwarding" id="ipv6_forwarding" 
+                               {% if forwarding_status.ipv6_forwarding %}checked{% endif %}>
+                        <label class="form-check-label" for="ipv6_forwarding">
+                            Enable IPv6 Forwarding
+                        </label>
+                    </div>
+
+                    <button type="submit" name="toggle_ip_forwarding" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Update IP Forwarding
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- NAT Settings -->
+    <div class="col-md-6">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">NAT Configuration</h6>
+            </div>
+            <div class="card-body">
+                <form method="post" action="{% url 'network:system_settings' %}">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <h6>Current Status:</h6>
+                        <span class="badge bg-{{ nat_status.nat_enabled|yesno:'success,danger' }}">
+                            NAT: {{ nat_status.nat_enabled|yesno:'Enabled,Disabled' }}
+                        </span>
+                    </div>
+
+                    <div class="form-check mb-3">
+                        <input class="form-check-input" type="checkbox" name="nat_enabled" id="nat_enabled" 
+                               {% if nat_status.nat_enabled %}checked{% endif %}>
+                        <label class="form-check-label" for="nat_enabled">
+                            Enable NAT/Masquerading
+                        </label>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="nat_interface" class="form-label">Interface for NAT:</label>
+                        <select class="form-select" name="nat_interface" id="nat_interface">
+                            {% for interface_name, interface_data in interfaces.items %}
+                                {% if interface_name != 'error' %}
+                                <option value="{{ interface_name }}" 
+                                    {% if interface_name == 'eth0' %}selected{% endif %}>
+                                    {{ interface_name }} ({{ interface_data.state }})
+                                </option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                        <div class="form-text">Select the external interface for NAT masquerading</div>
+                    </div>
+
+                    <button type="submit" name="toggle_nat" class="btn btn-primary">
+                        <i class="fas fa-save"></i> Update NAT Settings
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- System Information -->
 <div class="row">
     <div class="col-12">
         <div class="card shadow">
             <div class="card-header py-3">
-                <h6 class="m-0 font-weight-bold text-primary">Network System Configuration</h6>
+                <h6 class="m-0 font-weight-bold text-primary">System Information</h6>
             </div>
             <div class="card-body">
-                <div class="alert alert-info">
-                    <i class="fas fa-info-circle"></i> System network settings management will be implemented in future versions.
+                <div class="row">
+                    <div class="col-md-3">
+                        <h6>Network Interfaces:</h6>
+                        <span class="badge bg-info">{{ interface_count }}</span>
+                    </div>
+                    <div class="col-md-3">
+                        <h6>Active Interfaces:</h6>
+                        <span class="badge bg-success">{{ active_interface_count }}</span>
+                    </div>
+                    <div class="col-md-3">
+                        <h6>nftables Rules:</h6>
+                        <span class="badge bg-warning">{{ nftables_info.rule_count }}</span>
+                    </div>
                 </div>
+
+                {% if nftables_info.error %}
+                    <div class="alert alert-warning mt-3">
+                        <i class="fas fa-exclamation-triangle"></i> 
+                        Error getting nftables information: {{ nftables_info.error }}
+                    </div>
+                {% endif %}
+
+                {% if nat_status.error %}
+                    <div class="alert alert-warning mt-3">
+                        <i class="fas fa-exclamation-triangle"></i> 
+                        NAT Status Error: {{ nat_status.error }}
+                    </div>
+                {% endif %}
+
+                {% if forwarding_status.error %}
+                    <div class="alert alert-warning mt-3">
+                        <i class="fas fa-exclamation-triangle"></i> 
+                        IP Forwarding Status Error: {{ forwarding_status.error }}
+                    </div>
+                {% endif %}
             </div>
         </div>
     </div>

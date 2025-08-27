@@ -393,3 +393,186 @@ def validate_cidr(cidr):
         return True
     except ValueError:
         return False
+
+
+def create_nftables_rule(rule_data):
+    """Create a new nftables rule from model data"""
+    try:
+        # Ensure filter table exists
+        result = run_command(["/usr/bin/sudo", "/usr/sbin/nft", "add", "table", "ip", "filter"])
+        
+        # Ensure input chain exists
+        result = run_command([
+            "/usr/bin/sudo", "/usr/sbin/nft", "add", "chain", "ip", "filter", "input",
+            "{", "type", "filter", "hook", "input", "priority", "filter;", "policy", "accept;", "}"
+        ])
+        
+        # Ensure forward chain exists  
+        result = run_command([
+            "/usr/bin/sudo", "/usr/sbin/nft", "add", "chain", "ip", "filter", "forward",
+            "{", "type", "filter", "hook", "forward", "priority", "filter;", "policy", "accept;", "}"
+        ])
+        
+        # Build the nftables rule
+        rule_parts = ["add", "rule", "ip", "filter"]
+        
+        # Determine chain based on rule type
+        if rule_data.get('source_ip') and not rule_data.get('destination_ip'):
+            chain = "input"  # Traffic coming to this machine
+        elif rule_data.get('destination_ip') and not rule_data.get('source_ip'):
+            chain = "forward"  # Traffic being forwarded
+        else:
+            chain = "input"  # Default to input
+            
+        rule_parts.append(chain)
+        
+        # Add protocol
+        protocol = rule_data.get('protocol', 'tcp')
+        if protocol != 'all':
+            rule_parts.extend([protocol])
+            
+        # Add source IP if specified
+        source_ip = rule_data.get('source_ip')
+        if source_ip:
+            if '/' in source_ip:
+                rule_parts.extend(["ip", "saddr", source_ip])
+            else:
+                rule_parts.extend(["ip", "saddr", source_ip])
+                
+        # Add source port if specified
+        source_port = rule_data.get('source_port')
+        if source_port and protocol in ['tcp', 'udp']:
+            rule_parts.extend(["sport", str(source_port)])
+            
+        # Add destination IP if specified
+        dest_ip = rule_data.get('destination_ip')
+        if dest_ip:
+            if '/' in dest_ip:
+                rule_parts.extend(["ip", "daddr", dest_ip])
+            else:
+                rule_parts.extend(["ip", "daddr", dest_ip])
+                
+        # Add destination port if specified
+        dest_port = rule_data.get('destination_port')
+        if dest_port and protocol in ['tcp', 'udp']:
+            rule_parts.extend(["dport", str(dest_port)])
+            
+        # Add action
+        action = rule_data.get('action', 'accept')
+        rule_parts.append(action)
+        
+        # Add comment with rule name
+        rule_name = rule_data.get('name', 'unnamed')
+        rule_parts.extend(["comment", f'"{rule_name}"'])
+        
+        # Execute the nftables command
+        result = run_command(["/usr/bin/sudo", "/usr/sbin/nft"] + rule_parts)
+        
+        return result
+        
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+def create_port_forward_rule(port_forward_data):
+    """Create a new port forwarding rule"""
+    try:
+        external_port = port_forward_data.get('external_port')
+        internal_ip = port_forward_data.get('internal_ip')
+        internal_port = port_forward_data.get('internal_port')
+        protocol = port_forward_data.get('protocol', 'tcp')
+        name = port_forward_data.get('name', 'unnamed')
+        
+        # Ensure nat table exists
+        result = run_command(["/usr/bin/sudo", "/usr/sbin/nft", "add", "table", "ip", "nat"])
+        
+        # Ensure prerouting chain exists
+        result = run_command([
+            "/usr/bin/sudo", "/usr/sbin/nft", "add", "chain", "ip", "nat", "prerouting",
+            "{", "type", "nat", "hook", "prerouting", "priority", "dstnat;", "}"
+        ])
+        
+        # Add DNAT rule for port forwarding
+        dnat_rule = [
+            "/usr/bin/sudo", "/usr/sbin/nft", "add", "rule", "ip", "nat", "prerouting",
+            protocol, "dport", str(external_port),
+            "dnat", "to", f"{internal_ip}:{internal_port}",
+            "comment", f'"{name}"'
+        ]
+        
+        result = run_command(dnat_rule)
+        if not result['success']:
+            return result
+            
+        # Ensure filter table and forward chain exist for allowing the forwarded traffic
+        result = run_command(["/usr/bin/sudo", "/usr/sbin/nft", "add", "table", "ip", "filter"])
+        
+        result = run_command([
+            "/usr/bin/sudo", "/usr/sbin/nft", "add", "chain", "ip", "filter", "forward",
+            "{", "type", "filter", "hook", "forward", "priority", "filter;", "policy", "accept;", "}"
+        ])
+        
+        # Add forward rule to allow the traffic
+        forward_rule = [
+            "/usr/bin/sudo", "/usr/sbin/nft", "add", "rule", "ip", "filter", "forward",
+            "ip", "daddr", internal_ip, protocol, "dport", str(internal_port),
+            "accept", "comment", f'"{name}_forward"'
+        ]
+        
+        result = run_command(forward_rule)
+        
+        return result
+        
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+def parse_nftables_rules():
+    """Parse nftables rules into structured data"""
+    try:
+        result = run_command(["/usr/bin/sudo", "/usr/sbin/nft", "list", "ruleset"])
+        if not result["success"]:
+            return {"rules": [], "error": result.get("error")}
+            
+        rules = []
+        current_table = None
+        current_chain = None
+        
+        for line in result["stdout"].split("\n"):
+            line = line.strip()
+            
+            # Parse table declarations
+            if line.startswith("table "):
+                parts = line.split()
+                if len(parts) >= 3:
+                    current_table = {"family": parts[1], "name": parts[2], "chains": []}
+                    
+            # Parse chain declarations
+            elif line.startswith("chain ") and current_table:
+                parts = line.split()
+                if len(parts) >= 2:
+                    current_chain = {"name": parts[1], "rules": []}
+                    current_table["chains"].append(current_chain)
+                    
+            # Parse individual rules
+            elif current_chain and line and not line.startswith("#") and not line in ["{", "}"]:
+                # Extract comment if present
+                comment = ""
+                if "comment" in line:
+                    comment_match = re.search(r'comment "([^"]*)"', line)
+                    if comment_match:
+                        comment = comment_match.group(1)
+                        
+                rule_info = {
+                    "table": current_table["family"] + " " + current_table["name"] if current_table else "",
+                    "chain": current_chain["name"],
+                    "rule": line,
+                    "comment": comment
+                }
+                current_chain["rules"].append(rule_info)
+                rules.append(rule_info)
+                
+        return {"rules": rules, "error": None}
+        
+    except Exception as e:
+        return {"rules": [], "error": str(e)}

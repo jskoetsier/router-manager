@@ -15,16 +15,151 @@
     <div class="col-12">
         <div class="card shadow">
             <div class="card-header py-3 d-flex justify-content-between align-items-center">
-                <h6 class="m-0 font-weight-bold text-primary">Port Forward Configuration</h6>
+                <h6 class="m-0 font-weight-bold text-primary">Active Port Forward Rules</h6>
                 <a href="{% url 'nftables:add_port_forward' %}" class="btn btn-primary btn-sm">
                     <i class="fas fa-plus"></i> Add Port Forward
                 </a>
             </div>
             <div class="card-body">
-                <div class="alert alert-info">
-                    <i class="fas fa-info-circle"></i> Port forwarding management will be implemented in future versions.
+                {% if port_forwards %}
+                <div class="table-responsive">
+                    <table class="table table-striped table-hover">
+                        <thead>
+                            <tr>
+                                <th>Rule Name</th>
+                                <th>External Port</th>
+                                <th>Internal IP</th>
+                                <th>Internal Port</th>
+                                <th>Protocol</th>
+                                <th>Status</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for pf in port_forwards %}
+                            <tr>
+                                <td>
+                                    <i class="fas fa-arrow-right text-primary me-2"></i>
+                                    <strong>{{ pf.name }}</strong>
+                                </td>
+                                <td>
+                                    <span class="badge bg-info">{{ pf.external_port }}</span>
+                                </td>
+                                <td>
+                                    <code>{{ pf.internal_ip }}</code>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary">{{ pf.internal_port }}</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-{{ pf.protocol|lower == 'tcp' and 'success' or 'warning' }}">
+                                        {{ pf.protocol|upper }}
+                                    </span>
+                                </td>
+                                <td>
+                                    {% if pf.enabled %}
+                                    <span class="badge bg-success">
+                                        <i class="fas fa-check"></i> Active
+                                    </span>
+                                    {% else %}
+                                    <span class="badge bg-secondary">
+                                        <i class="fas fa-pause"></i> Disabled
+                                    </span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <small class="text-muted">
+                                        {{ pf.created_at|date:"M j, Y" }}
+                                        <br>by {{ pf.created_by.username }}
+                                    </small>
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <button class="btn btn-outline-primary btn-sm" title="Edit rule" disabled>
+                                            <i class="fas fa-edit"></i>
+                                        </button>
+                                        <button class="btn btn-outline-danger btn-sm" title="Delete rule" disabled>
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="text-center py-4">
+                    <i class="fas fa-exchange-alt fa-3x text-muted mb-3"></i>
+                    <h5 class="text-muted">No Port Forward Rules</h5>
+                    <p class="text-muted">No port forwarding rules have been configured yet.</p>
+                    <a href="{% url 'nftables:add_port_forward' %}" class="btn btn-primary">
+                        <i class="fas fa-plus"></i> Create First Port Forward
+                    </a>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Quick Actions</h6>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h6><i class="fas fa-plus text-primary"></i> Add Port Forward</h6>
+                                <p class="text-muted small">Create new port forwarding rule</p>
+                                <a href="{% url 'nftables:add_port_forward' %}" class="btn btn-sm btn-primary">Add
+                                    Rule</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h6><i class="fas fa-shield-alt text-success"></i> Firewall Rules</h6>
+                                <p class="text-muted small">Manage firewall rules</p>
+                                <a href="{% url 'nftables:rules_list' %}" class="btn btn-sm btn-success">View Rules</a>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="card bg-light">
+                            <div class="card-body text-center">
+                                <h6><i class="fas fa-home text-info"></i> nftables Home</h6>
+                                <p class="text-muted small">Back to nftables overview</p>
+                                <a href="{% url 'nftables:home' %}" class="btn btn-sm btn-info">nftables Home</a>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
+        </div>
+    </div>
+</div>
+
+<!-- Help Information -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="alert alert-info">
+            <h6><i class="fas fa-info-circle"></i> About Port Forwarding</h6>
+            <p class="mb-2">Port forwarding redirects communication requests from one address and port number
+                combination to another while the packets are traversing a network gateway.</p>
+            <ul class="mb-0">
+                <li><strong>External Port:</strong> Port on the router/firewall that receives traffic</li>
+                <li><strong>Internal IP:</strong> IP address of the target device on your network</li>
+                <li><strong>Internal Port:</strong> Port on the target device where traffic is forwarded</li>
+                <li><strong>Protocol:</strong> TCP for web services, both TCP/UDP for gaming</li>
+            </ul>
         </div>
     </div>
 </div>

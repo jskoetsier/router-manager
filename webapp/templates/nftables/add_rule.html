@@ -12,14 +12,152 @@
 </div>
 
 <div class="row">
-    <div class="col-12">
+    <div class="col-12 col-lg-8">
         <div class="card shadow">
-            <div class="card-header py-3">
+            <div class="card-header py-3 d-flex justify-content-between align-items-center">
                 <h6 class="m-0 font-weight-bold text-primary">New nftables Rule</h6>
+                <a href="{% url 'nftables:rules_list' %}" class="btn btn-secondary btn-sm">
+                    <i class="fas fa-arrow-left"></i> Back to Rules
+                </a>
             </div>
             <div class="card-body">
-                <div class="alert alert-info">
-                    <i class="fas fa-info-circle"></i> Add firewall rule functionality will be implemented in future versions.
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="{{ form.name.id_for_label }}" class="form-label">Rule Name *</label>
+                            {{ form.name }}
+                            {% if form.name.errors %}
+                                <div class="text-danger small">{{ form.name.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.protocol.id_for_label }}" class="form-label">Protocol *</label>
+                            {{ form.protocol }}
+                            {% if form.protocol.errors %}
+                                <div class="text-danger small">{{ form.protocol.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.description.id_for_label }}" class="form-label">Description</label>
+                        {{ form.description }}
+                        {% if form.description.errors %}
+                            <div class="text-danger small">{{ form.description.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="{{ form.source_ip.id_for_label }}" class="form-label">Source IP/Network</label>
+                            {{ form.source_ip }}
+                            <div class="form-text">Leave empty for any source</div>
+                            {% if form.source_ip.errors %}
+                                <div class="text-danger small">{{ form.source_ip.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.source_port.id_for_label }}" class="form-label">Source Port</label>
+                            {{ form.source_port }}
+                            <div class="form-text">Leave empty for any port</div>
+                            {% if form.source_port.errors %}
+                                <div class="text-danger small">{{ form.source_port.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="{{ form.destination_ip.id_for_label }}" class="form-label">Destination IP/Network</label>
+                            {{ form.destination_ip }}
+                            <div class="form-text">Leave empty for any destination</div>
+                            {% if form.destination_ip.errors %}
+                                <div class="text-danger small">{{ form.destination_ip.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.destination_port.id_for_label }}" class="form-label">Destination Port</label>
+                            {{ form.destination_port }}
+                            <div class="form-text">Leave empty for any port</div>
+                            {% if form.destination_port.errors %}
+                                <div class="text-danger small">{{ form.destination_port.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="{{ form.action.id_for_label }}" class="form-label">Action *</label>
+                            {{ form.action }}
+                            {% if form.action.errors %}
+                                <div class="text-danger small">{{ form.action.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.priority.id_for_label }}" class="form-label">Priority *</label>
+                            {{ form.priority }}
+                            <div class="form-text">Lower numbers = higher priority</div>
+                            {% if form.priority.errors %}
+                                <div class="text-danger small">{{ form.priority.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <div class="form-check">
+                            {{ form.enabled }}
+                            <label class="form-check-label" for="{{ form.enabled.id_for_label }}">
+                                Enable rule immediately
+                            </label>
+                        </div>
+                        {% if form.enabled.errors %}
+                            <div class="text-danger small">{{ form.enabled.errors.0 }}</div>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Create Rule
+                        </button>
+                        <a href="{% url 'nftables:rules_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-lg-4">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-info">Rule Examples</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <h6 class="text-primary">Allow SSH</h6>
+                    <small class="text-muted">
+                        Protocol: TCP<br>
+                        Destination Port: 22<br>
+                        Action: Accept
+                    </small>
+                </div>
+                <div class="mb-3">
+                    <h6 class="text-primary">Block specific IP</h6>
+                    <small class="text-muted">
+                        Source IP: 192.168.1.50<br>
+                        Action: Drop
+                    </small>
+                </div>
+                <div class="mb-3">
+                    <h6 class="text-primary">Allow HTTP/HTTPS</h6>
+                    <small class="text-muted">
+                        Protocol: TCP<br>
+                        Destination Port: 80 or 443<br>
+                        Action: Accept
+                    </small>
                 </div>
             </div>
         </div>

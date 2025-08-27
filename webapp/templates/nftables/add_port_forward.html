@@ -12,15 +12,137 @@
 </div>
 
 <div class="row">
-    <div class="col-12">
+    <div class="col-12 col-lg-8">
         <div class="card shadow">
-            <div class="card-header py-3">
+            <div class="card-header py-3 d-flex justify-content-between align-items-center">
                 <h6 class="m-0 font-weight-bold text-primary">New Port Forward Rule</h6>
+                <a href="{% url 'nftables:port_forward_list' %}" class="btn btn-secondary btn-sm">
+                    <i class="fas fa-arrow-left"></i> Back to Port Forwards
+                </a>
             </div>
             <div class="card-body">
-                <div class="alert alert-info">
-                    <i class="fas fa-info-circle"></i> Add port forwarding functionality will be implemented in future versions.
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="{{ form.name.id_for_label }}" class="form-label">Rule Name *</label>
+                            {{ form.name }}
+                            {% if form.name.errors %}
+                                <div class="text-danger small">{{ form.name.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.protocol.id_for_label }}" class="form-label">Protocol *</label>
+                            {{ form.protocol }}
+                            {% if form.protocol.errors %}
+                                <div class="text-danger small">{{ form.protocol.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="{{ form.external_port.id_for_label }}" class="form-label">External Port *</label>
+                            {{ form.external_port }}
+                            <div class="form-text">Port on the router/firewall</div>
+                            {% if form.external_port.errors %}
+                                <div class="text-danger small">{{ form.external_port.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.internal_ip.id_for_label }}" class="form-label">Internal IP *</label>
+                            {{ form.internal_ip }}
+                            <div class="form-text">Target device IP address</div>
+                            {% if form.internal_ip.errors %}
+                                <div class="text-danger small">{{ form.internal_ip.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="{{ form.internal_port.id_for_label }}" class="form-label">Internal Port *</label>
+                            {{ form.internal_port }}
+                            <div class="form-text">Port on the target device</div>
+                            {% if form.internal_port.errors %}
+                                <div class="text-danger small">{{ form.internal_port.errors.0 }}</div>
+                            {% endif %}
+                        </div>
+                        <div class="col-md-6 d-flex align-items-end">
+                            <div class="form-check">
+                                {{ form.enabled }}
+                                <label class="form-check-label" for="{{ form.enabled.id_for_label }}">
+                                    Enable rule immediately
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if form.enabled.errors %}
+                        <div class="text-danger small mb-3">{{ form.enabled.errors.0 }}</div>
+                    {% endif %}
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Create Port Forward
+                        </button>
+                        <a href="{% url 'nftables:port_forward_list' %}" class="btn btn-secondary">
+                            <i class="fas fa-times"></i> Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-12 col-lg-4">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-info">Port Forward Examples</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-3">
+                    <h6 class="text-primary">Web Server</h6>
+                    <small class="text-muted">
+                        External Port: 80<br>
+                        Internal IP: 192.168.1.100<br>
+                        Internal Port: 80<br>
+                        Protocol: TCP
+                    </small>
                 </div>
+                <div class="mb-3">
+                    <h6 class="text-primary">SSH Access</h6>
+                    <small class="text-muted">
+                        External Port: 2222<br>
+                        Internal IP: 192.168.1.50<br>
+                        Internal Port: 22<br>
+                        Protocol: TCP
+                    </small>
+                </div>
+                <div class="mb-3">
+                    <h6 class="text-primary">Game Server</h6>
+                    <small class="text-muted">
+                        External Port: 25565<br>
+                        Internal IP: 192.168.1.200<br>
+                        Internal Port: 25565<br>
+                        Protocol: TCP
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <div class="card shadow mt-3">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-warning">Important Notes</h6>
+            </div>
+            <div class="card-body">
+                <ul class="small text-muted mb-0">
+                    <li>Ensure IP forwarding is enabled on the system</li>
+                    <li>Make sure firewall allows forwarded traffic</li>
+                    <li>External ports must be unique per protocol</li>
+                    <li>Internal device should have static IP</li>
+                </ul>
             </div>
         </div>
     </div>

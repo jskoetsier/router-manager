@@ -32,12 +32,115 @@
                     <span class="badge bg-info">Total Rules: {{ nftables_info.rule_count }}</span>
                 </div>
 
-                {% if nftables_info.rules %}
-                <h6 class="mb-3">Current nftables Configuration:</h6>
-                <div class="bg-light p-3 border rounded">
-                    <pre class="mb-0"
-                        style="max-height: 500px; overflow-y: auto;"><code>{{ nftables_info.rules }}</code></pre>
-                </div>
+                {% if saved_rules or parsed_rules %}
+                    <div class="mb-4">
+                        <h6 class="mb-3">Saved Rules from Database:</h6>
+                        {% if saved_rules %}
+                        <div class="table-responsive">
+                            <table class="table table-sm table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Protocol</th>
+                                        <th>Source</th>
+                                        <th>Destination</th>
+                                        <th>Action</th>
+                                        <th>Priority</th>
+                                        <th>Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for rule in saved_rules %}
+                                    <tr>
+                                        <td><strong>{{ rule.name }}</strong></td>
+                                        <td>
+                                            <span class="badge bg-{{ rule.protocol == 'tcp' and 'success' or rule.protocol == 'udp' and 'warning' or 'info' }}">
+                                                {{ rule.protocol|upper }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% if rule.source_ip %}
+                                                <code>{{ rule.source_ip }}</code>
+                                                {% if rule.source_port %}:{{ rule.source_port }}{% endif %}
+                                            {% else %}
+                                                <span class="text-muted">Any</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            {% if rule.destination_ip %}
+                                                <code>{{ rule.destination_ip }}</code>
+                                                {% if rule.destination_port %}:{{ rule.destination_port }}{% endif %}
+                                            {% else %}
+                                                <span class="text-muted">Any</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-{{ rule.action == 'accept' and 'success' or rule.action == 'drop' and 'danger' or 'warning' }}">
+                                                {{ rule.action|capfirst }}
+                                            </span>
+                                        </td>
+                                        <td>{{ rule.priority }}</td>
+                                        <td>
+                                            {% if rule.enabled %}
+                                                <span class="badge bg-success">Active</span>
+                                            {% else %}
+                                                <span class="badge bg-secondary">Disabled</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                        {% else %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i> No rules saved in database yet.
+                        </div>
+                        {% endif %}
+                    </div>
+
+                    {% if parsed_rules %}
+                    <div class="mb-4">
+                        <h6 class="mb-3">Active System Rules (nftables):</h6>
+                        <div class="table-responsive">
+                            <table class="table table-sm table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Table</th>
+                                        <th>Chain</th>
+                                        <th>Rule</th>
+                                        <th>Comment</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for rule in parsed_rules %}
+                                    <tr>
+                                        <td><span class="badge bg-info">{{ rule.table }}</span></td>
+                                        <td><span class="badge bg-secondary">{{ rule.chain }}</span></td>
+                                        <td><code class="text-break">{{ rule.rule }}</code></td>
+                                        <td>
+                                            {% if rule.comment %}
+                                                <span class="text-muted">{{ rule.comment }}</span>
+                                            {% else %}
+                                                -
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <details class="mb-3">
+                        <summary class="btn btn-link p-0 text-primary">
+                            <i class="fas fa-code"></i> View Raw nftables Configuration
+                        </summary>
+                        <div class="bg-light p-3 border rounded mt-2">
+                            <pre class="mb-0" style="max-height: 400px; overflow-y: auto;"><code>{{ nftables_info.rules }}</code></pre>
+                        </div>
+                    </details>
                 {% else %}
                 <div class="alert alert-info">
                     <i class="fas fa-info-circle"></i> No nftables rules are currently configured.

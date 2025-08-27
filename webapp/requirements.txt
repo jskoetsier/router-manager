@@ -13,11 +13,8 @@ requests==2.31.*
 paramiko==3.3.*
 psutil==5.9.*
 django-widget-tweaks==1.5.*
-chart.js==3.9.*
 plotly==5.17.*
 pandas==2.1.*
 numpy==1.25.*
 netaddr==0.9.*
-ipaddress==1.0.*
 cryptography==41.*
-strongswan-config==0.1.*

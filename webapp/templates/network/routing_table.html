@@ -46,70 +46,41 @@
                             {% for route in routes.ipv4_routes %}
                             <tr>
                                 <td>
-                                    {% if "default" in route %}
-                                        <span class="badge bg-primary">Default</span>
-                                    {% elif "/" in route %}
-                                        {% for part in route.split %}
-                                            {% if "/" in part and not "dev" in part and not "via" in part %}
-                                                {{ part }}
-                                                {% break %}
-                                            {% endif %}
-                                        {% endfor %}
+                                    {% if route.destination == "Default" %}
+                                        <span class="badge bg-primary">{{ route.destination }}</span>
+                                    {% else %}
+                                        {{ route.destination }}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if route.gateway == "Direct" %}
+                                        <span class="text-muted">{{ route.gateway }}</span>
+                                    {% else %}
+                                        {{ route.gateway }}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if route.interface != "-" %}
+                                        <code>{{ route.interface }}</code>
                                     {% else %}
                                         <span class="text-muted">-</span>
                                     {% endif %}
                                 </td>
                                 <td>
-                                    {% if "via" in route %}
-                                        {% for part in route.split %}
-                                            {% if "via" == part %}
-                                                {{ route.split|slice:":10"|join:" "|cut:"via "|cut:" dev" }}
-                                                {% break %}
-                                            {% endif %}
-                                        {% endfor %}
-                                    {% else %}
-                                        <span class="text-muted">Direct</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if "dev" in route %}
-                                        {% for part in route.split %}
-                                            {% if "dev" == part %}
-                                                <code>{{ route.split|slice:":20"|join:" "|cut:"dev "|truncatewords:1 }}</code>
-                                                {% break %}
-                                            {% endif %}
-                                        {% endfor %}
+                                    {% if route.protocol != "-" %}
+                                        <span class="badge bg-info">{{ route.protocol }}</span>
                                     {% else %}
                                         <span class="text-muted">-</span>
                                     {% endif %}
                                 </td>
                                 <td>
-                                    {% if "proto" in route %}
-                                        <span class="badge bg-info">
-                                            {% for part in route.split %}
-                                                {% if "proto" == part %}
-                                                    {{ route.split|slice:":20"|join:" "|cut:"proto "|truncatewords:1 }}
-                                                    {% break %}
-                                                {% endif %}
-                                            {% endfor %}
-                                        </span>
+                                    {% if route.metric != "-" %}
+                                        {{ route.metric }}
                                     {% else %}
                                         <span class="text-muted">-</span>
                                     {% endif %}
                                 </td>
-                                <td>
-                                    {% if "metric" in route %}
-                                        {% for part in route.split %}
-                                            {% if "metric" == part %}
-                                                {{ route.split|slice:":20"|join:" "|cut:"metric "|truncatewords:1 }}
-                                                {% break %}
-                                            {% endif %}
-                                        {% endfor %}
-                                    {% else %}
-                                        <span class="text-muted">-</span>
-                                    {% endif %}
-                                </td>
-                                <td><small class="text-muted">{{ route }}</small></td>
+                                <td><small class="text-muted">{{ route.full_route }}</small></td>
                             </tr>
                             {% endfor %}
                         </tbody>
@@ -150,70 +121,41 @@
                             {% for route in routes.ipv6_routes %}
                             <tr>
                                 <td>
-                                    {% if "default" in route %}
-                                        <span class="badge bg-primary">Default</span>
-                                    {% elif "/" in route %}
-                                        {% for part in route.split %}
-                                            {% if "/" in part and not "dev" in part and not "via" in part %}
-                                                {{ part }}
-                                                {% break %}
-                                            {% endif %}
-                                        {% endfor %}
+                                    {% if route.destination == "Default" %}
+                                        <span class="badge bg-primary">{{ route.destination }}</span>
+                                    {% else %}
+                                        {{ route.destination }}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if route.gateway == "Direct" %}
+                                        <span class="text-muted">{{ route.gateway }}</span>
+                                    {% else %}
+                                        {{ route.gateway }}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if route.interface != "-" %}
+                                        <code>{{ route.interface }}</code>
                                     {% else %}
                                         <span class="text-muted">-</span>
                                     {% endif %}
                                 </td>
                                 <td>
-                                    {% if "via" in route %}
-                                        {% for part in route.split %}
-                                            {% if "via" == part %}
-                                                {{ route.split|slice:":10"|join:" "|cut:"via "|cut:" dev" }}
-                                                {% break %}
-                                            {% endif %}
-                                        {% endfor %}
-                                    {% else %}
-                                        <span class="text-muted">Direct</span>
-                                    {% endif %}
-                                </td>
-                                <td>
-                                    {% if "dev" in route %}
-                                        {% for part in route.split %}
-                                            {% if "dev" == part %}
-                                                <code>{{ route.split|slice:":20"|join:" "|cut:"dev "|truncatewords:1 }}</code>
-                                                {% break %}
-                                            {% endif %}
-                                        {% endfor %}
+                                    {% if route.protocol != "-" %}
+                                        <span class="badge bg-info">{{ route.protocol }}</span>
                                     {% else %}
                                         <span class="text-muted">-</span>
                                     {% endif %}
                                 </td>
                                 <td>
-                                    {% if "proto" in route %}
-                                        <span class="badge bg-info">
-                                            {% for part in route.split %}
-                                                {% if "proto" == part %}
-                                                    {{ route.split|slice:":20"|join:" "|cut:"proto "|truncatewords:1 }}
-                                                    {% break %}
-                                                {% endif %}
-                                            {% endfor %}
-                                        </span>
+                                    {% if route.metric != "-" %}
+                                        {{ route.metric }}
                                     {% else %}
                                         <span class="text-muted">-</span>
                                     {% endif %}
                                 </td>
-                                <td>
-                                    {% if "metric" in route %}
-                                        {% for part in route.split %}
-                                            {% if "metric" == part %}
-                                                {{ route.split|slice:":20"|join:" "|cut:"metric "|truncatewords:1 }}
-                                                {% break %}
-                                            {% endif %}
-                                        {% endfor %}
-                                    {% else %}
-                                        <span class="text-muted">-</span>
-                                    {% endif %}
-                                </td>
-                                <td><small class="text-muted">{{ route }}</small></td>
+                                <td><small class="text-muted">{{ route.full_route }}</small></td>
                             </tr>
                             {% endfor %}
                         </tbody>

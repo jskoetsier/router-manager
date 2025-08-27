@@ -286,6 +286,39 @@ def get_network_interfaces():
         return {"error": str(e)}
 
 
+def parse_route_line(route_line):
+    """Parse a single route line into structured data"""
+    parts = route_line.split()
+    
+    route_info = {
+        "destination": "-",
+        "gateway": "Direct",
+        "interface": "-",
+        "protocol": "-",
+        "metric": "-",
+        "full_route": route_line
+    }
+    
+    # Parse destination
+    if "default" in route_line:
+        route_info["destination"] = "Default"
+    elif "/" in parts[0] if parts else False:
+        route_info["destination"] = parts[0]
+    
+    # Parse parts
+    for i, part in enumerate(parts):
+        if part == "via" and i + 1 < len(parts):
+            route_info["gateway"] = parts[i + 1]
+        elif part == "dev" and i + 1 < len(parts):
+            route_info["interface"] = parts[i + 1]
+        elif part == "proto" and i + 1 < len(parts):
+            route_info["protocol"] = parts[i + 1]
+        elif part == "metric" and i + 1 < len(parts):
+            route_info["metric"] = parts[i + 1]
+    
+    return route_info
+
+
 def get_routing_table():
     """Get current routing table"""
     try:
@@ -296,7 +329,8 @@ def get_routing_table():
         if result["success"]:
             for line in result["stdout"].split("\n"):
                 if line.strip():
-                    ipv4_routes.append(line.strip())
+                    parsed_route = parse_route_line(line.strip())
+                    ipv4_routes.append(parsed_route)
 
         # Get IPv6 routes
         result = run_command(["/usr/bin/sudo", "/sbin/ip", "-6", "route", "show"])
@@ -305,7 +339,8 @@ def get_routing_table():
         if result["success"]:
             for line in result["stdout"].split("\n"):
                 if line.strip():
-                    ipv6_routes.append(line.strip())
+                    parsed_route = parse_route_line(line.strip())
+                    ipv6_routes.append(parsed_route)
 
         return {"ipv4_routes": ipv4_routes, "ipv6_routes": ipv6_routes}
 

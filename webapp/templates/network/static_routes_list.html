@@ -1,0 +1,205 @@
+{% extends 'base.html' %}
+
+{% block title %}Static Routes - Router Manager{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i class="fas fa-route"></i> Static Routes</h1>
+            <a href="{% url 'network:add_static_route' %}" class="btn btn-primary">
+                <i class="fas fa-plus"></i> Add Static Route
+            </a>
+        </div>
+    </div>
+</div>
+
+<!-- Database Routes -->
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow mb-4">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Configured Static Routes</h6>
+            </div>
+            <div class="card-body">
+                {% if db_routes %}
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Destination</th>
+                                <th>Gateway</th>
+                                <th>Interface</th>
+                                <th>Metric</th>
+                                <th>Status</th>
+                                <th>Created By</th>
+                                <th>Created</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for route in db_routes %}
+                            <tr>
+                                <td>
+                                    {% if route.destination == "default" %}
+                                        <span class="badge bg-primary">Default Route</span>
+                                    {% else %}
+                                        <code>{{ route.destination }}</code>
+                                    {% endif %}
+                                </td>
+                                <td><code>{{ route.gateway }}</code></td>
+                                <td>
+                                    {% if route.interface %}
+                                        <span class="badge bg-info">{{ route.interface.name }}</span>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ route.metric }}</td>
+                                <td>
+                                    {% if route.enabled %}
+                                        <span class="badge bg-success">Enabled</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Disabled</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ route.created_by.username }}</td>
+                                <td>{{ route.created_at|date:"M d, Y H:i" }}</td>
+                                <td>
+                                    <div class="btn-group" role="group">
+                                        <a href="{% url 'network:edit_static_route' route.id %}" 
+                                           class="btn btn-sm btn-outline-primary">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <button type="button" 
+                                                class="btn btn-sm btn-outline-danger" 
+                                                onclick="confirmDelete('{{ route.destination }}', '{% url 'network:delete_static_route' route.id %}')">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> 
+                    No static routes configured. 
+                    <a href="{% url 'network:add_static_route' %}">Add your first static route</a>.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- System Routes (for reference) -->
+<div class="row">
+    <div class="col-12">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Current System Routing Table (IPv4)</h6>
+            </div>
+            <div class="card-body">
+                {% if system_routes.ipv4_routes %}
+                <div class="table-responsive">
+                    <table class="table table-sm table-striped">
+                        <thead>
+                            <tr>
+                                <th>Destination</th>
+                                <th>Gateway</th>
+                                <th>Interface</th>
+                                <th>Protocol</th>
+                                <th>Metric</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for route in system_routes.ipv4_routes %}
+                            <tr>
+                                <td>
+                                    {% if route.destination == "Default" %}
+                                        <span class="badge bg-primary">{{ route.destination }}</span>
+                                    {% else %}
+                                        <small>{{ route.destination }}</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if route.gateway == "Direct" %}
+                                        <span class="text-muted">{{ route.gateway }}</span>
+                                    {% else %}
+                                        <small>{{ route.gateway }}</small>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if route.interface != "-" %}
+                                        <small><code>{{ route.interface }}</code></small>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if route.protocol != "-" %}
+                                        <span class="badge bg-light text-dark">{{ route.protocol }}</span>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if route.metric != "-" %}
+                                        <small>{{ route.metric }}</small>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+                {% else %}
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i> Unable to retrieve system routing table.
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Are you sure you want to delete the static route for <strong id="deleteRouteName"></strong>?</p>
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    This will remove the route from both the system and persistent configuration.
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <form id="deleteForm" method="post" style="display: inline;">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger">Delete Route</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmDelete(routeName, deleteUrl) {
+    document.getElementById('deleteRouteName').textContent = routeName;
+    document.getElementById('deleteForm').action = deleteUrl;
+    var deleteModal = new bootstrap.Modal(document.getElementById('deleteModal'));
+    deleteModal.show();
+}
+</script>
+{% endblock %}

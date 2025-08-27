@@ -289,7 +289,7 @@ def get_network_interfaces():
 def parse_route_line(route_line):
     """Parse a single route line into structured data"""
     parts = route_line.split()
-    
+
     route_info = {
         "destination": "-",
         "gateway": "Direct",
@@ -298,13 +298,13 @@ def parse_route_line(route_line):
         "metric": "-",
         "full_route": route_line
     }
-    
+
     # Parse destination
     if "default" in route_line:
         route_info["destination"] = "Default"
     elif "/" in parts[0] if parts else False:
         route_info["destination"] = parts[0]
-    
+
     # Parse parts
     for i, part in enumerate(parts):
         if part == "via" and i + 1 < len(parts):
@@ -315,7 +315,7 @@ def parse_route_line(route_line):
             route_info["protocol"] = parts[i + 1]
         elif part == "metric" and i + 1 < len(parts):
             route_info["metric"] = parts[i + 1]
-    
+
     return route_info
 
 
@@ -400,22 +400,22 @@ def create_nftables_rule(rule_data):
     try:
         # Ensure filter table exists
         result = run_command(["/usr/bin/sudo", "/usr/sbin/nft", "add", "table", "ip", "filter"])
-        
+
         # Ensure input chain exists
         result = run_command([
             "/usr/bin/sudo", "/usr/sbin/nft", "add", "chain", "ip", "filter", "input",
             "{", "type", "filter", "hook", "input", "priority", "filter;", "policy", "accept;", "}"
         ])
-        
-        # Ensure forward chain exists  
+
+        # Ensure forward chain exists
         result = run_command([
             "/usr/bin/sudo", "/usr/sbin/nft", "add", "chain", "ip", "filter", "forward",
             "{", "type", "filter", "hook", "forward", "priority", "filter;", "policy", "accept;", "}"
         ])
-        
+
         # Build the nftables rule
         rule_parts = ["add", "rule", "ip", "filter"]
-        
+
         # Determine chain based on rule type
         if rule_data.get('source_ip') and not rule_data.get('destination_ip'):
             chain = "input"  # Traffic coming to this machine
@@ -423,14 +423,14 @@ def create_nftables_rule(rule_data):
             chain = "forward"  # Traffic being forwarded
         else:
             chain = "input"  # Default to input
-            
+
         rule_parts.append(chain)
-        
+
         # Add protocol
         protocol = rule_data.get('protocol', 'tcp')
         if protocol != 'all':
             rule_parts.extend([protocol])
-            
+
         # Add source IP if specified
         source_ip = rule_data.get('source_ip')
         if source_ip:
@@ -438,12 +438,12 @@ def create_nftables_rule(rule_data):
                 rule_parts.extend(["ip", "saddr", source_ip])
             else:
                 rule_parts.extend(["ip", "saddr", source_ip])
-                
+
         # Add source port if specified
         source_port = rule_data.get('source_port')
         if source_port and protocol in ['tcp', 'udp']:
             rule_parts.extend(["sport", str(source_port)])
-            
+
         # Add destination IP if specified
         dest_ip = rule_data.get('destination_ip')
         if dest_ip:
@@ -451,25 +451,25 @@ def create_nftables_rule(rule_data):
                 rule_parts.extend(["ip", "daddr", dest_ip])
             else:
                 rule_parts.extend(["ip", "daddr", dest_ip])
-                
+
         # Add destination port if specified
         dest_port = rule_data.get('destination_port')
         if dest_port and protocol in ['tcp', 'udp']:
             rule_parts.extend(["dport", str(dest_port)])
-            
+
         # Add action
         action = rule_data.get('action', 'accept')
         rule_parts.append(action)
-        
+
         # Add comment with rule name
         rule_name = rule_data.get('name', 'unnamed')
         rule_parts.extend(["comment", f'"{rule_name}"'])
-        
+
         # Execute the nftables command
         result = run_command(["/usr/bin/sudo", "/usr/sbin/nft"] + rule_parts)
-        
+
         return result
-        
+
     except Exception as e:
         return {"success": False, "error": str(e)}
 
@@ -482,16 +482,16 @@ def create_port_forward_rule(port_forward_data):
         internal_port = port_forward_data.get('internal_port')
         protocol = port_forward_data.get('protocol', 'tcp')
         name = port_forward_data.get('name', 'unnamed')
-        
+
         # Ensure nat table exists
         result = run_command(["/usr/bin/sudo", "/usr/sbin/nft", "add", "table", "ip", "nat"])
-        
+
         # Ensure prerouting chain exists
         result = run_command([
             "/usr/bin/sudo", "/usr/sbin/nft", "add", "chain", "ip", "nat", "prerouting",
             "{", "type", "nat", "hook", "prerouting", "priority", "dstnat;", "}"
         ])
-        
+
         # Add DNAT rule for port forwarding
         dnat_rule = [
             "/usr/bin/sudo", "/usr/sbin/nft", "add", "rule", "ip", "nat", "prerouting",
@@ -499,30 +499,30 @@ def create_port_forward_rule(port_forward_data):
             "dnat", "to", f"{internal_ip}:{internal_port}",
             "comment", f'"{name}"'
         ]
-        
+
         result = run_command(dnat_rule)
         if not result['success']:
             return result
-            
+
         # Ensure filter table and forward chain exist for allowing the forwarded traffic
         result = run_command(["/usr/bin/sudo", "/usr/sbin/nft", "add", "table", "ip", "filter"])
-        
+
         result = run_command([
             "/usr/bin/sudo", "/usr/sbin/nft", "add", "chain", "ip", "filter", "forward",
             "{", "type", "filter", "hook", "forward", "priority", "filter;", "policy", "accept;", "}"
         ])
-        
+
         # Add forward rule to allow the traffic
         forward_rule = [
             "/usr/bin/sudo", "/usr/sbin/nft", "add", "rule", "ip", "filter", "forward",
             "ip", "daddr", internal_ip, protocol, "dport", str(internal_port),
             "accept", "comment", f'"{name}_forward"'
         ]
-        
+
         result = run_command(forward_rule)
-        
+
         return result
-        
+
     except Exception as e:
         return {"success": False, "error": str(e)}
 
@@ -533,27 +533,27 @@ def parse_nftables_rules():
         result = run_command(["/usr/bin/sudo", "/usr/sbin/nft", "list", "ruleset"])
         if not result["success"]:
             return {"rules": [], "error": result.get("error")}
-            
+
         rules = []
         current_table = None
         current_chain = None
-        
+
         for line in result["stdout"].split("\n"):
             line = line.strip()
-            
+
             # Parse table declarations
             if line.startswith("table "):
                 parts = line.split()
                 if len(parts) >= 3:
                     current_table = {"family": parts[1], "name": parts[2], "chains": []}
-                    
+
             # Parse chain declarations
             elif line.startswith("chain ") and current_table:
                 parts = line.split()
                 if len(parts) >= 2:
                     current_chain = {"name": parts[1], "rules": []}
                     current_table["chains"].append(current_chain)
-                    
+
             # Parse individual rules
             elif current_chain and line and not line.startswith("#") and not line in ["{", "}"]:
                 # Extract comment if present
@@ -562,7 +562,7 @@ def parse_nftables_rules():
                     comment_match = re.search(r'comment "([^"]*)"', line)
                     if comment_match:
                         comment = comment_match.group(1)
-                        
+
                 rule_info = {
                     "table": current_table["family"] + " " + current_table["name"] if current_table else "",
                     "chain": current_chain["name"],
@@ -571,8 +571,135 @@ def parse_nftables_rules():
                 }
                 current_chain["rules"].append(rule_info)
                 rules.append(rule_info)
-                
+
         return {"rules": rules, "error": None}
-        
+
     except Exception as e:
         return {"rules": [], "error": str(e)}
+
+
+def add_static_route(destination, gateway, interface, metric=100):
+    """Add a static route to the system"""
+    try:
+        # Build the route command
+        if destination.lower() == 'default':
+            cmd = ["/usr/bin/sudo", "/sbin/ip", "route", "add", "default"]
+        else:
+            cmd = ["/usr/bin/sudo", "/sbin/ip", "route", "add", destination]
+        
+        # Add gateway if specified
+        if gateway:
+            cmd.extend(["via", gateway])
+        
+        # Add interface if specified
+        if interface:
+            cmd.extend(["dev", interface])
+        
+        # Add metric
+        if metric:
+            cmd.extend(["metric", str(metric)])
+        
+        result = run_command(cmd)
+        return result
+        
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+def delete_static_route(destination, gateway=None, interface=None):
+    """Delete a static route from the system"""
+    try:
+        # Build the route command
+        if destination.lower() == 'default':
+            cmd = ["/usr/bin/sudo", "/sbin/ip", "route", "del", "default"]
+        else:
+            cmd = ["/usr/bin/sudo", "/sbin/ip", "route", "del", destination]
+        
+        # Add gateway if specified
+        if gateway:
+            cmd.extend(["via", gateway])
+        
+        # Add interface if specified
+        if interface:
+            cmd.extend(["dev", interface])
+        
+        result = run_command(cmd)
+        return result
+        
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+def make_route_persistent(destination, gateway, interface, metric=100):
+    """Make a route persistent by adding it to network scripts"""
+    try:
+        # For Rocky Linux/RHEL systems, we'll create a route file
+        # This is a simplified approach - production systems may need more sophisticated handling
+        
+        route_file = f"/etc/sysconfig/network-scripts/route-{interface}"
+        
+        # Create route entry
+        if destination.lower() == 'default':
+            route_entry = f"default via {gateway} dev {interface} metric {metric}\n"
+        else:
+            route_entry = f"{destination} via {gateway} dev {interface} metric {metric}\n"
+        
+        # Use a simple approach to add the route
+        script = f"""#!/bin/bash
+# Add route to persistent configuration
+echo "{route_entry.strip()}" >> {route_file}
+"""
+        
+        # Write and execute the script
+        with open("/tmp/add_route.sh", "w") as f:
+            f.write(script)
+        os.chmod("/tmp/add_route.sh", 0o755)
+        
+        result = run_command(["/usr/bin/sudo", "/bin/bash", "/tmp/add_route.sh"])
+        
+        # Clean up
+        try:
+            os.remove("/tmp/add_route.sh")
+        except:
+            pass
+        
+        return result
+        
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+
+def remove_persistent_route(destination, interface):
+    """Remove a persistent route from network scripts"""
+    try:
+        route_file = f"/etc/sysconfig/network-scripts/route-{interface}"
+        
+        # Create a script to remove the route
+        script = f"""#!/bin/bash
+# Remove route from persistent configuration
+if [ -f "{route_file}" ]; then
+    # Create backup
+    cp {route_file} {route_file}.bak 2>/dev/null || true
+    # Remove the specific route
+    grep -v "{destination}" {route_file} > {route_file}.tmp 2>/dev/null || touch {route_file}.tmp
+    mv {route_file}.tmp {route_file}
+fi
+"""
+        
+        # Write and execute the script
+        with open("/tmp/remove_route.sh", "w") as f:
+            f.write(script)
+        os.chmod("/tmp/remove_route.sh", 0o755)
+        
+        result = run_command(["/usr/bin/sudo", "/bin/bash", "/tmp/remove_route.sh"])
+        
+        # Clean up
+        try:
+            os.remove("/tmp/remove_route.sh")
+        except:
+            pass
+        
+        return result
+        
+    except Exception as e:
+        return {"success": False, "error": str(e)}

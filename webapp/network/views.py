@@ -8,9 +8,11 @@ from dashboard.utils import log_user_activity
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.http import JsonResponse
-from django.shortcuts import redirect, render
+from django.shortcuts import redirect, render, get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 
+from .models import Route, NetworkInterface
+from .forms import RouteForm
 from .utils import (
     configure_basic_nat,
     get_ip_forwarding_status,
@@ -19,6 +21,10 @@ from .utils import (
     get_nftables_rules,
     get_routing_table,
     set_ip_forwarding,
+    add_static_route,
+    delete_static_route,
+    make_route_persistent,
+    remove_persistent_route,
 )
 
 
@@ -172,6 +178,212 @@ def system_settings(request):
         "active_interface_count": active_interface_count,
     }
     return render(request, "network/system_settings.html", context)
+
+
+@login_required
+def static_routes_list(request):
+    """List static routes"""
+    # Get database routes
+    db_routes = Route.objects.all().order_by('metric', 'destination')
+    
+    # Get system routes for comparison
+    system_routes = get_routing_table()
+    
+    context = {
+        'db_routes': db_routes,
+        'system_routes': system_routes,
+        'page_title': 'Static Routes'
+    }
+    
+    return render(request, 'network/static_routes_list.html', context)
+
+
+@login_required
+def add_static_route_view(request):
+    """Add new static route"""
+    if request.method == 'POST':
+        form = RouteForm(request.POST)
+        if form.is_valid():
+            try:
+                route = form.save(commit=False)
+                route.created_by = request.user
+                
+                # Apply route to system
+                result = add_static_route(
+                    route.destination,
+                    route.gateway,
+                    route.interface.name if route.interface else None,
+                    route.metric
+                )
+                
+                if result['success']:
+                    # Make route persistent
+                    if route.interface:
+                        persist_result = make_route_persistent(
+                            route.destination,
+                            route.gateway,
+                            route.interface.name,
+                            route.metric
+                        )
+                        
+                        if not persist_result['success']:
+                            messages.warning(request, f'Route added but persistence failed: {persist_result.get("error", "Unknown error")}')
+                    
+                    # Save to database
+                    route.save()
+                    
+                    messages.success(request, f'Static route "{route.destination}" added successfully!')
+                    log_user_activity(
+                        request.user,
+                        f'Added static route: {route.destination} via {route.gateway}',
+                        request.META.get('REMOTE_ADDR', ''),
+                        True
+                    )
+                    return redirect('network:static_routes_list')
+                else:
+                    messages.error(request, f'Failed to add route: {result.get("error", "Unknown error")}')
+                    
+            except Exception as e:
+                messages.error(request, f'Failed to add static route: {str(e)}')
+                log_user_activity(
+                    request.user,
+                    f'Failed to add static route: {str(e)}',
+                    request.META.get('REMOTE_ADDR', ''),
+                    False
+                )
+    else:
+        form = RouteForm()
+    
+    context = {
+        'form': form,
+        'page_title': 'Add Static Route'
+    }
+    
+    return render(request, 'network/add_static_route.html', context)
+
+
+@login_required
+def edit_static_route(request, route_id):
+    """Edit existing static route"""
+    route = get_object_or_404(Route, id=route_id)
+    
+    if request.method == 'POST':
+        form = RouteForm(request.POST, instance=route)
+        if form.is_valid():
+            try:
+                # Remove old route first
+                delete_result = delete_static_route(
+                    route.destination,
+                    route.gateway,
+                    route.interface.name if route.interface else None
+                )
+                
+                # Remove from persistent config
+                if route.interface:
+                    remove_persistent_route(route.destination, route.interface.name)
+                
+                # Update route object
+                updated_route = form.save(commit=False)
+                
+                # Apply new route to system
+                result = add_static_route(
+                    updated_route.destination,
+                    updated_route.gateway,
+                    updated_route.interface.name if updated_route.interface else None,
+                    updated_route.metric
+                )
+                
+                if result['success']:
+                    # Make route persistent
+                    if updated_route.interface:
+                        persist_result = make_route_persistent(
+                            updated_route.destination,
+                            updated_route.gateway,
+                            updated_route.interface.name,
+                            updated_route.metric
+                        )
+                        
+                        if not persist_result['success']:
+                            messages.warning(request, f'Route updated but persistence failed: {persist_result.get("error", "Unknown error")}')
+                    
+                    # Save to database
+                    updated_route.save()
+                    
+                    messages.success(request, f'Static route "{route.destination}" updated successfully!')
+                    log_user_activity(
+                        request.user,
+                        f'Updated static route: {route.destination}',
+                        request.META.get('REMOTE_ADDR', ''),
+                        True
+                    )
+                    return redirect('network:static_routes_list')
+                else:
+                    messages.error(request, f'Failed to update route: {result.get("error", "Unknown error")}')
+                    
+            except Exception as e:
+                messages.error(request, f'Failed to update static route: {str(e)}')
+                log_user_activity(
+                    request.user,
+                    f'Failed to update static route: {route.destination} - {str(e)}',
+                    request.META.get('REMOTE_ADDR', ''),
+                    False
+                )
+    else:
+        form = RouteForm(instance=route)
+    
+    context = {
+        'form': form,
+        'route': route,
+        'page_title': f'Edit Static Route: {route.destination}'
+    }
+    
+    return render(request, 'network/add_static_route.html', context)
+
+
+@login_required
+def delete_static_route_view(request, route_id):
+    """Delete static route"""
+    route = get_object_or_404(Route, id=route_id)
+    
+    if request.method == 'POST':
+        try:
+            # Remove from system
+            result = delete_static_route(
+                route.destination,
+                route.gateway,
+                route.interface.name if route.interface else None
+            )
+            
+            # Remove from persistent config
+            if route.interface:
+                remove_persistent_route(route.destination, route.interface.name)
+            
+            # Delete from database
+            route_destination = route.destination
+            route.delete()
+            
+            if result['success']:
+                messages.success(request, f'Static route "{route_destination}" deleted successfully!')
+            else:
+                messages.warning(request, f'Route deleted from database, but system removal failed: {result.get("error", "Unknown error")}')
+            
+            log_user_activity(
+                request.user,
+                f'Deleted static route: {route_destination}',
+                request.META.get('REMOTE_ADDR', ''),
+                True
+            )
+            
+        except Exception as e:
+            messages.error(request, f'Failed to delete static route: {str(e)}')
+            log_user_activity(
+                request.user,
+                f'Failed to delete static route: {route.destination} - {str(e)}',
+                request.META.get('REMOTE_ADDR', ''),
+                False
+            )
+    
+    return redirect('network:static_routes_list')
 
 
 @login_required

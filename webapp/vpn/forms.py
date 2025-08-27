@@ -42,7 +42,7 @@ class VPNTunnelForm(forms.ModelForm):
     )
 
     remote_id = forms.CharField(
-        label="Remote Identity", 
+        label="Remote Identity",
         max_length=255,
         help_text="Remote identity: IP address, hostname, FQDN, or email (e.g., 203.0.113.1, remote.company.com, gateway@remote.com)",
         widget=forms.TextInput(attrs={

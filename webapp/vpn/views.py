@@ -30,7 +30,7 @@ def home(request):
     # Calculate stats
     total_tunnels = len(ipsec_tunnels)
     active_tunnels = len([t for t in ipsec_tunnels if t['status'] == 'ESTABLISHED'])
-    
+
     context = {
         'strongswan_status': strongswan_status,
         'total_tunnels': total_tunnels,
@@ -46,7 +46,7 @@ def tunnels_list(request):
     """List VPN tunnels"""
     # Get live IPSec tunnels from swanctl
     ipsec_tunnels = get_ipsec_tunnels()
-    
+
     # Also get database tunnels if they exist
     db_tunnels = VPNTunnel.objects.all().order_by('name')
 
@@ -54,27 +54,27 @@ def tunnels_list(request):
     if request.method == 'POST':
         action = request.POST.get('action')
         tunnel_name = request.POST.get('tunnel_name')
-        
+
         if action == 'initiate' and tunnel_name:
             success, output = initiate_tunnel(tunnel_name)
             if success:
                 messages.success(request, f'Tunnel "{tunnel_name}" initiated successfully')
             else:
                 messages.error(request, f'Failed to initiate tunnel "{tunnel_name}": {output}')
-                
+
         elif action == 'terminate' and tunnel_name:
             success, output = terminate_tunnel(tunnel_name)
             if success:
                 messages.success(request, f'Tunnel "{tunnel_name}" terminated successfully')
             else:
                 messages.error(request, f'Failed to terminate tunnel "{tunnel_name}": {output}')
-                
+
         elif action == 'restart_service':
             if restart_ipsec_service():
                 messages.success(request, 'IPSec service restarted successfully')
             else:
                 messages.error(request, 'Failed to restart IPSec service')
-        
+
         return redirect('vpn:tunnels_list')
 
     context = {

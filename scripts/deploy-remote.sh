@@ -39,7 +39,7 @@ print_error() {
 # Function to check if SSH connection works
 check_ssh_connection() {
     print_status "Testing SSH connection to $REMOTE_USER@$REMOTE_HOST:$REMOTE_PORT..."
-    
+
     if ssh -p "$REMOTE_PORT" -o ConnectTimeout=5 -o BatchMode=yes "$REMOTE_USER@$REMOTE_HOST" "echo 'SSH connection successful'" &>/dev/null; then
         print_success "SSH connection established"
     else
@@ -55,9 +55,9 @@ check_ssh_connection() {
 # Function to check remote OS compatibility
 check_remote_os() {
     print_status "Checking remote operating system..."
-    
+
     OS_INFO=$(ssh -p "$REMOTE_PORT" "$REMOTE_USER@$REMOTE_HOST" "cat /etc/os-release" 2>/dev/null || echo "")
-    
+
     if echo "$OS_INFO" | grep -q 'ID="rocky"' && echo "$OS_INFO" | grep -q 'VERSION_ID="9'; then
         print_success "Rocky Linux 9 detected on remote host"
         REMOTE_OS="rocky9"
@@ -76,7 +76,7 @@ check_remote_os() {
 # Function to install git on remote host if needed
 install_git_remote() {
     print_status "Checking if git is installed on remote host..."
-    
+
     if ssh -p "$REMOTE_PORT" "$REMOTE_USER@$REMOTE_HOST" "command -v git &>/dev/null"; then
         print_success "Git is already installed on remote host"
     else
@@ -92,11 +92,11 @@ install_git_remote() {
 # Function to clone or update repository on remote host
 setup_repository_remote() {
     print_status "Setting up Router Manager repository on remote host..."
-    
+
     # Check if repository already exists
     if ssh -p "$REMOTE_PORT" "$REMOTE_USER@$REMOTE_HOST" "test -d /opt/router-manager/.git"; then
         print_status "Repository exists on remote host, updating..."
-        
+
         # Update repository
         ssh -p "$REMOTE_PORT" "$REMOTE_USER@$REMOTE_HOST" "
             cd /opt/router-manager
@@ -105,22 +105,22 @@ setup_repository_remote() {
                 echo 'Backing up local changes...'
                 git stash push -m 'Auto-backup before deployment $(date)'
             fi
-            
+
             # Update repository
             git fetch origin
             git checkout $BRANCH
             git pull origin $BRANCH
-            
+
             echo 'Repository updated successfully'
         " || {
             print_error "Failed to update repository on remote host"
             exit 1
         }
-        
+
         print_success "Repository updated on remote host"
     else
         print_status "Cloning repository to remote host..."
-        
+
         # Remove existing directory if it exists but is not a git repo
         ssh -p "$REMOTE_PORT" "$REMOTE_USER@$REMOTE_HOST" "
             if [[ -d /opt/router-manager ]]; then
@@ -128,7 +128,7 @@ setup_repository_remote() {
                 rm -rf /opt/router-manager
             fi
         "
-        
+
         # Clone repository
         ssh -p "$REMOTE_PORT" "$REMOTE_USER@$REMOTE_HOST" "
             git clone $REPO_URL /opt/router-manager
@@ -138,10 +138,10 @@ setup_repository_remote() {
             print_error "Failed to clone repository on remote host"
             exit 1
         }
-        
+
         print_success "Repository cloned to remote host"
     fi
-    
+
     # Show current version
     VERSION=$(ssh -p "$REMOTE_PORT" "$REMOTE_USER@$REMOTE_HOST" "cat /opt/router-manager/VERSION 2>/dev/null" || echo "Unknown")
     print_success "Router Manager version on remote host: $VERSION"
@@ -150,7 +150,7 @@ setup_repository_remote() {
 # Function to run installation on remote host
 run_installation_remote() {
     print_status "Running Router Manager installation on remote host..."
-    
+
     ssh -p "$REMOTE_PORT" "$REMOTE_USER@$REMOTE_HOST" "
         cd /opt/router-manager
         chmod +x scripts/install-from-git.sh
@@ -160,14 +160,14 @@ run_installation_remote() {
         print_error "Check the installation logs on the remote host: /var/log/router-manager-install.log"
         exit 1
     }
-    
+
     print_success "Router Manager installation completed on remote host"
 }
 
 # Function to verify installation
 verify_installation() {
     print_status "Verifying installation on remote host..."
-    
+
     # Check if service is running
     if ssh -p "$REMOTE_PORT" "$REMOTE_USER@$REMOTE_HOST" "systemctl is-active router-manager &>/dev/null"; then
         print_success "Router Manager service is running"
@@ -178,10 +178,10 @@ verify_installation() {
             return 1
         }
     fi
-    
+
     # Check web interface accessibility
     REMOTE_IP=$(ssh -p "$REMOTE_PORT" "$REMOTE_USER@$REMOTE_HOST" "hostname -I | awk '{print \$1}'" 2>/dev/null || echo "$REMOTE_HOST")
-    
+
     print_status "Testing web interface accessibility..."
     if curl -k -s "https://$REMOTE_IP" --connect-timeout 10 &>/dev/null; then
         print_success "Web interface is accessible at https://$REMOTE_IP"
@@ -195,7 +195,7 @@ verify_installation() {
 show_deployment_summary() {
     REMOTE_IP=$(ssh -p "$REMOTE_PORT" "$REMOTE_USER@$REMOTE_HOST" "hostname -I | awk '{print \$1}'" 2>/dev/null || echo "$REMOTE_HOST")
     VERSION=$(ssh -p "$REMOTE_PORT" "$REMOTE_USER@$REMOTE_HOST" "cat /opt/router-manager/VERSION 2>/dev/null" || echo "Unknown")
-    
+
     print_success "Router Manager deployment completed!"
     echo
     echo -e "${GREEN}Deployment Summary:${NC}"
@@ -285,7 +285,7 @@ main() {
     echo -e "  • Repository: ${BLUE}$REPO_URL${NC}"
     echo -e "  • Branch: ${BLUE}$BRANCH${NC}"
     echo
-    
+
     check_ssh_connection
     check_remote_os
     install_git_remote

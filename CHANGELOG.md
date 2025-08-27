@@ -198,7 +198,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added proper sudo permissions for ip commands in Django context
   - Fixed container-style interface name parsing (e.g., `eth0@if35`)
   - Network interfaces now correctly display with IP addresses and status
-  
+
 - **📋 Routing Table Template Errors**
   - Completely redesigned routing table template to eliminate Django template syntax errors
   - Removed invalid `{% break %}` statements that caused `TemplateSyntaxError`
@@ -246,7 +246,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - **🔧 Database Schema Migration Issue**
-  - Fixed `ProgrammingError: column vpn_vpntunnel.local_id does not exist` 
+  - Fixed `ProgrammingError: column vpn_vpntunnel.local_id does not exist`
   - Resolved database schema mismatch between model fields and actual table columns
   - Successfully migrated from `local_ip`/`remote_ip` to `local_id`/`remote_id` column names
   - Reset and re-applied VPN app migrations to ensure database consistency

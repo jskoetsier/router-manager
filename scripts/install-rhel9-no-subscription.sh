@@ -304,13 +304,13 @@ configure_django() {
     # Create Django settings for production
     sudo -u "$SERVICE_USER" bash -c "
         source ../venv/bin/activate
-        
+
         # Run migrations
         python manage.py migrate --settings=router_manager.settings_server
-        
+
         # Create superuser
         echo \"from django.contrib.auth import get_user_model; User = get_user_model(); User.objects.create_superuser('admin', 'admin@localhost', 'admin') if not User.objects.filter(username='admin').exists() else None\" | python manage.py shell --settings=router_manager.settings_server
-        
+
         # Collect static files
         python manage.py collectstatic --noinput --settings=router_manager.settings_server
     "

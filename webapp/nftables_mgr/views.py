@@ -22,10 +22,10 @@ def rules_list(request):
     """List firewall rules"""
     # Get current nftables rules from system
     nftables_info = get_nftables_rules()
-    
+
     # Get parsed rules for better display
     parsed_rules = parse_nftables_rules()
-    
+
     # Get saved rules from database
     saved_rules = NFTableRule.objects.filter(enabled=True).order_by('priority', 'name')
 
@@ -47,7 +47,7 @@ def add_rule(request):
             rule = form.save(commit=False)
             rule.created_by = request.user
             rule.save()
-            
+
             # Apply to nftables if enabled
             if rule.enabled:
                 rule_data = {
@@ -59,7 +59,7 @@ def add_rule(request):
                     'destination_port': rule.destination_port,
                     'action': rule.action,
                 }
-                
+
                 result = create_nftables_rule(rule_data)
                 if result.get('success'):
                     messages.success(request, f'Firewall rule "{rule.name}" created successfully!')
@@ -67,13 +67,13 @@ def add_rule(request):
                     messages.error(request, f'Rule saved but failed to apply to nftables: {result.get("error", "Unknown error")}')
             else:
                 messages.success(request, f'Firewall rule "{rule.name}" saved (disabled)!')
-                
+
             return redirect('nftables:rules_list')
         else:
             messages.error(request, 'Please correct the errors below.')
     else:
         form = NFTableRuleForm()
-    
+
     context = {'form': form}
     return render(request, "nftables/add_rule.html", context)
 
@@ -83,7 +83,7 @@ def port_forward_list(request):
     """List port forwarding rules"""
     # Get saved port forward rules
     port_forwards = PortForward.objects.filter(enabled=True).order_by('external_port')
-    
+
     context = {
         'port_forwards': port_forwards,
     }
@@ -100,7 +100,7 @@ def add_port_forward(request):
             port_forward = form.save(commit=False)
             port_forward.created_by = request.user
             port_forward.save()
-            
+
             # Apply to nftables if enabled
             if port_forward.enabled:
                 port_forward_data = {
@@ -110,7 +110,7 @@ def add_port_forward(request):
                     'internal_port': port_forward.internal_port,
                     'protocol': port_forward.protocol,
                 }
-                
+
                 result = create_port_forward_rule(port_forward_data)
                 if result.get('success'):
                     messages.success(request, f'Port forward rule "{port_forward.name}" created successfully!')
@@ -118,12 +118,12 @@ def add_port_forward(request):
                     messages.error(request, f'Rule saved but failed to apply to nftables: {result.get("error", "Unknown error")}')
             else:
                 messages.success(request, f'Port forward rule "{port_forward.name}" saved (disabled)!')
-                
+
             return redirect('nftables:port_forward_list')
         else:
             messages.error(request, 'Please correct the errors below.')
     else:
         form = PortForwardForm()
-    
+
     context = {'form': form}
     return render(request, "nftables/add_port_forward.html", context)

@@ -1,0 +1,187 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ page_title }} - Router Manager{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h1><i class="fas fa-route"></i> {{ page_title }}</h1>
+            <a href="{% url 'network:static_routes_list' %}" class="btn btn-secondary">
+                <i class="fas fa-arrow-left"></i> Back to Static Routes
+            </a>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-lg-8">
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-primary">Route Configuration</h6>
+            </div>
+            <div class="card-body">
+                <form method="post">
+                    {% csrf_token %}
+                    
+                    <div class="mb-3">
+                        <label for="{{ form.destination.id_for_label }}" class="form-label">
+                            <strong>Destination Network</strong>
+                        </label>
+                        {{ form.destination }}
+                        <div class="form-text">
+                            Enter the destination network in CIDR notation (e.g., 192.168.2.0/24) or 'default' for default route
+                        </div>
+                        {% if form.destination.errors %}
+                            <div class="text-danger">
+                                {% for error in form.destination.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.gateway.id_for_label }}" class="form-label">
+                            <strong>Gateway IP Address</strong>
+                        </label>
+                        {{ form.gateway }}
+                        <div class="form-text">
+                            IP address of the gateway/next-hop router
+                        </div>
+                        {% if form.gateway.errors %}
+                            <div class="text-danger">
+                                {% for error in form.gateway.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.interface.id_for_label }}" class="form-label">
+                            <strong>Network Interface</strong>
+                        </label>
+                        {{ form.interface }}
+                        <div class="form-text">
+                            Network interface to use for this route
+                        </div>
+                        {% if form.interface.errors %}
+                            <div class="text-danger">
+                                {% for error in form.interface.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="{{ form.metric.id_for_label }}" class="form-label">
+                            <strong>Metric</strong>
+                        </label>
+                        {{ form.metric }}
+                        <div class="form-text">
+                            Route priority (lower values have higher priority)
+                        </div>
+                        {% if form.metric.errors %}
+                            <div class="text-danger">
+                                {% for error in form.metric.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="form-check">
+                            {{ form.enabled }}
+                            <label class="form-check-label" for="{{ form.enabled.id_for_label }}">
+                                <strong>Enable this route</strong>
+                            </label>
+                        </div>
+                        <div class="form-text">
+                            Uncheck to create the route configuration without activating it
+                        </div>
+                        {% if form.enabled.errors %}
+                            <div class="text-danger">
+                                {% for error in form.enabled.errors %}
+                                    <small>{{ error }}</small>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{% url 'network:static_routes_list' %}" class="btn btn-secondary me-md-2">
+                            Cancel
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> 
+                            {% if route %}Update Route{% else %}Add Route{% endif %}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <!-- Help Panel -->
+        <div class="card shadow">
+            <div class="card-header py-3">
+                <h6 class="m-0 font-weight-bold text-info">
+                    <i class="fas fa-info-circle"></i> Help & Examples
+                </h6>
+            </div>
+            <div class="card-body">
+                <h6>Common Route Examples:</h6>
+                
+                <div class="mb-3">
+                    <strong>Default Route:</strong>
+                    <ul class="list-unstyled">
+                        <li><strong>Destination:</strong> <code>default</code></li>
+                        <li><strong>Gateway:</strong> <code>192.168.1.1</code></li>
+                        <li><strong>Interface:</strong> <code>eth0</code></li>
+                    </ul>
+                </div>
+
+                <div class="mb-3">
+                    <strong>Network Route:</strong>
+                    <ul class="list-unstyled">
+                        <li><strong>Destination:</strong> <code>10.0.0.0/8</code></li>
+                        <li><strong>Gateway:</strong> <code>192.168.1.10</code></li>
+                        <li><strong>Interface:</strong> <code>eth1</code></li>
+                    </ul>
+                </div>
+
+                <div class="mb-3">
+                    <strong>Host Route:</strong>
+                    <ul class="list-unstyled">
+                        <li><strong>Destination:</strong> <code>203.0.113.1/32</code></li>
+                        <li><strong>Gateway:</strong> <code>192.168.1.254</code></li>
+                        <li><strong>Interface:</strong> <code>eth0</code></li>
+                    </ul>
+                </div>
+
+                <hr>
+
+                <h6>Route Metrics:</h6>
+                <p><small>Lower metric values have higher priority. Common values:</small></p>
+                <ul>
+                    <li><strong>10-50:</strong> High priority routes</li>
+                    <li><strong>100:</strong> Normal priority (default)</li>
+                    <li><strong>200-500:</strong> Lower priority routes</li>
+                    <li><strong>600+:</strong> Backup routes</li>
+                </ul>
+
+                <hr>
+
+                <div class="alert alert-warning">
+                    <i class="fas fa-exclamation-triangle"></i>
+                    <strong>Note:</strong> Routes will be applied immediately and made persistent across reboots.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

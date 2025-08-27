@@ -53,9 +53,11 @@
                                     <span class="badge bg-secondary">{{ pf.internal_port }}</span>
                                 </td>
                                 <td>
-                                    <span class="badge bg-{{ pf.protocol|lower == 'tcp' and 'success' or 'warning' }}">
-                                        {{ pf.protocol|upper }}
-                                    </span>
+                                    {% if pf.protocol|lower == 'tcp' %}
+                                        <span class="badge bg-success">{{ pf.protocol|upper }}</span>
+                                    {% else %}
+                                        <span class="badge bg-warning">{{ pf.protocol|upper }}</span>
+                                    {% endif %}
                                 </td>
                                 <td>
                                     {% if pf.enabled %}

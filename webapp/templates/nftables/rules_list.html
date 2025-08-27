@@ -54,9 +54,13 @@
                                     <tr>
                                         <td><strong>{{ rule.name }}</strong></td>
                                         <td>
-                                            <span class="badge bg-{{ rule.protocol == 'tcp' and 'success' or rule.protocol == 'udp' and 'warning' or 'info' }}">
-                                                {{ rule.protocol|upper }}
-                                            </span>
+                                            {% if rule.protocol == 'tcp' %}
+                                                <span class="badge bg-success">{{ rule.protocol|upper }}</span>
+                                            {% elif rule.protocol == 'udp' %}
+                                                <span class="badge bg-warning">{{ rule.protocol|upper }}</span>
+                                            {% else %}
+                                                <span class="badge bg-info">{{ rule.protocol|upper }}</span>
+                                            {% endif %}
                                         </td>
                                         <td>
                                             {% if rule.source_ip %}
@@ -75,9 +79,13 @@
                                             {% endif %}
                                         </td>
                                         <td>
-                                            <span class="badge bg-{{ rule.action == 'accept' and 'success' or rule.action == 'drop' and 'danger' or 'warning' }}">
-                                                {{ rule.action|capfirst }}
-                                            </span>
+                                            {% if rule.action == 'accept' %}
+                                                <span class="badge bg-success">{{ rule.action|capfirst }}</span>
+                                            {% elif rule.action == 'drop' %}
+                                                <span class="badge bg-danger">{{ rule.action|capfirst }}</span>
+                                            {% else %}
+                                                <span class="badge bg-warning">{{ rule.action|capfirst }}</span>
+                                            {% endif %}
                                         </td>
                                         <td>{{ rule.priority }}</td>
                                         <td>

@@ -103,6 +103,79 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - VPN configurations require proper network planning
 - Regular security updates recommended
 
+## [1.3.0] - 2025-08-27
+
+### Added
+- **🛣️ Static Routes Management System**
+  - Complete CRUD operations for static routes through web interface
+  - Form-based route creation with validation for CIDR notation and IP addresses
+  - Real-time application of routes to system routing table
+  - Persistent route configuration across system reboots
+  - Integration with network interface selection and metric configuration
+  - Side-by-side comparison of configured routes vs. live system routing table
+
+- **🔧 Enhanced VPN Statistics & Monitoring**
+  - Improved VPN tunnel statistics parsing for internal servers
+  - Enhanced error handling when `swanctl` command is missing or unavailable
+  - Better service validation with graceful degradation when StrongSwan is not running
+  - Automatic detection of `swanctl` command location across different installations
+  - Timeout protection for VPN commands that might hang
+  - More informative error messages instead of generic failures
+
+- **🌐 Network Management Enhancements**
+  - Added static routes section to network management navigation
+  - New RouteForm with comprehensive validation for destinations, gateways, and interfaces
+  - Help examples and documentation within the route creation interface
+  - Route status indicators and metrics display
+  - Integration with existing network interface management
+
+### Enhanced
+- **🎨 User Interface Improvements**
+  - New static routes list page with sortable tables and status indicators
+  - Enhanced route creation form with contextual help and validation
+  - Improved network homepage with static routes quick access
+  - Better responsive design for route management on mobile devices
+  - Color-coded route status badges and interface indicators
+
+- **🔒 Security & Configuration**
+  - Fixed CSRF trusted origins to include external server domain (195.95.177.8:10443)
+  - Enhanced system integration with proper sudo permissions for route commands
+  - Improved error handling and logging for route operations
+  - Better validation for network addresses and CIDR notation
+
+### Fixed
+- **🐛 Server Deployment Issues**
+  - Resolved missing `django-widget-tweaks` dependency on external server
+  - Fixed Redis service startup and configuration on external server
+  - Corrected CSRF verification failures for external domain access
+  - Improved service restart handling and process management
+
+- **⚙️ VPN Statistics Reliability**
+  - Fixed VPN statistics retrieval on servers without proper StrongSwan setup
+  - Enhanced output parsing for different `swanctl` command formats
+  - Better error handling when VPN services are not available
+  - Improved timeout handling for hung VPN status commands
+
+### Technical Implementation
+- **Backend Architecture**
+  - Created `network.utils.add_static_route()` for system route application
+  - Added `network.utils.make_route_persistent()` for boot persistence
+  - Implemented `network.utils.delete_static_route()` for route removal
+  - Enhanced VPN utils with better service detection and error handling
+  - Database integration with existing Route model for persistence
+
+- **Frontend Implementation**
+  - New RouteForm with Django ModelForm validation
+  - Static routes list and management templates
+  - Enhanced network navigation with static routes integration
+  - Improved form validation and user feedback systems
+
+### Deployment Success
+- Successfully deployed to both internal server (192.168.1.253) and external server (195.95.177.8)
+- All static route functionality verified working in production
+- VPN statistics now work reliably across different server configurations
+- Redis service properly configured and running on both servers
+
 ## [1.2.0] - 2025-08-27
 
 ### Added

@@ -2,7 +2,7 @@
 Router Manager version information
 """
 
-__version__ = "1.2.0"
+__version__ = "1.3.0"
 __title__ = "Router Manager"
 __description__ = "Web-based router management system for RHEL and Rocky Linux with nftables firewall management"
 __author__ = "Router Manager Team"

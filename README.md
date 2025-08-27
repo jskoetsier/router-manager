@@ -1,6 +1,6 @@
 # Router Manager
 
-**Version 1.2.0** - A comprehensive web-based router management system for RHEL 9 and Rocky Linux 9 distributions. This application provides an intuitive web interface for managing network configurations, firewall rules, VPN tunnels, and system monitoring with fully functional nftables integration.
+**Version 1.3.0** - A comprehensive web-based router management system for RHEL 9 and Rocky Linux 9 distributions. This application provides an intuitive web interface for managing network configurations, firewall rules, VPN tunnels, static routes, and system monitoring with fully functional nftables integration.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
@@ -8,28 +8,30 @@
 
 ## 🚀 Features
 
-### ✅ Current Features (v1.2.0)
+### ✅ Current Features (v1.3.0)
 - **🖥️ Modern Web Interface**: Responsive Django-based UI with Bootstrap 5 styling
-- **🛡️ Firewall Management**: **NEW** Complete nftables integration with port forwarding and rule management
+- **🛡️ Firewall Management**: Complete nftables integration with port forwarding and rule management
+- **🛣️ Static Routes Management**: **NEW** Full CRUD operations for static routes with persistent configuration
 - **🌐 Network Configuration**: Advanced IP forwarding, NAT, and network interface management
-- **🔐 IPSec VPN Tunnels**: Full StrongSwan integration for site-to-site and client VPN
+- **🔐 IPSec VPN Tunnels**: Enhanced StrongSwan integration with improved statistics
 - **📊 System Monitoring**: Real-time CPU, memory, disk usage with dashboard graphs
 - **👤 User Management**: Secure authentication with activity logging and audit trails
 - **🔧 Automated Installation**: One-command installation for RHEL 9 and Rocky Linux 9
 - **🔒 Security Hardening**: HTTPS-only, fail2ban integration, and comprehensive logging
 - **🔄 Git-Based Updates**: Automated deployment and update system via Git repository
-- **🌐 Real Network Display**: Fixed interface detection and network status display
+- **🌐 Real Network Display**: Interface detection and network status display
 - **📋 Working Routing Table**: Full IPv4/IPv6 routing table display with proper parsing
-- **⚡ Functional UI**: All network pages now work without template syntax errors
+- **⚡ Functional UI**: All network pages work without template syntax errors
 
-### 🆕 What's New in v1.2.0
-- **🔥 Fully Functional nftables Management**: Create, edit, and manage firewall rules through web interface
-- **🔄 Live Rule Application**: Rules are applied to nftables configuration in real-time
-- **📊 Enhanced Rule Display**: Clean, organized view of both database-saved and active system rules
-- **🚀 Port Forwarding**: Complete DNAT configuration with web forms and validation
-- **🛠️ Form Validation**: Comprehensive IP address, port, and CIDR validation
-- **✅ Database Persistence**: Rules saved for future management and audit trails
-- **🎨 Improved UI**: Better rule visualization with status indicators and protocol badges
+### 🆕 What's New in v1.3.0
+- **🛣️ Complete Static Routes Management**: Create, edit, and delete static routes through web interface
+- **🔄 Real-time Route Application**: Routes applied immediately to system routing table with boot persistence
+- **📊 Route Comparison View**: Side-by-side display of configured routes vs. live system routing table
+- **🛠️ Advanced Route Validation**: CIDR notation validation, IP address verification, and interface selection
+- **📱 Mobile-Responsive Design**: Improved responsive design for route management on all devices
+- **🔧 Enhanced VPN Statistics**: Better error handling and service detection for VPN tunnel monitoring
+- **🚀 Improved Deployment**: Fixed CSRF issues, dependency management, and service reliability
+- **✅ Production Tested**: Fully deployed and tested on both internal and external servers
 
 ### 🎯 Supported Use Cases
 - **Home Lab Router**: Convert Linux server into feature-rich router

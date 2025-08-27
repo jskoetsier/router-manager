@@ -59,7 +59,32 @@
   - [x] Improved responsive design for rule management pages
   - [x] User-friendly error messages and form field help text
 
-## Version 1.3.0 - Enhanced Monitoring & Analytics
+## Version 1.3.0 - Static Routes & VPN Enhancements ✅ (Released 2025-08-27)
+**Focus**: Complete static routing management and improved VPN statistics
+- [x] **Static Routes Management System**
+  - [x] Complete CRUD operations for static routes through web interface
+  - [x] Form-based route creation with validation for CIDR notation and IP addresses
+  - [x] Real-time application of routes to system routing table
+  - [x] Persistent route configuration across system reboots
+  - [x] Integration with network interface selection and metric configuration
+  - [x] Side-by-side comparison of configured routes vs. live system routing table
+
+- [x] **Enhanced VPN Statistics & Monitoring**
+  - [x] Improved VPN tunnel statistics parsing for internal servers
+  - [x] Enhanced error handling when `swanctl` command is missing or unavailable
+  - [x] Better service validation with graceful degradation when StrongSwan is not running
+  - [x] Automatic detection of `swanctl` command location across different installations
+  - [x] Timeout protection for VPN commands that might hang
+  - [x] More informative error messages instead of generic failures
+
+- [x] **Production Deployment & Security Improvements**
+  - [x] Fixed CSRF trusted origins to include external server domain
+  - [x] Resolved missing dependencies on external server deployment
+  - [x] Fixed Redis service startup and configuration issues
+  - [x] Enhanced system integration with proper sudo permissions for route commands
+  - [x] Successfully deployed to both internal and external production servers
+
+## Version 1.4.0 - Enhanced Monitoring & Analytics
 **Focus**: Advanced system monitoring and alerting capabilities
 - [ ] Advanced monitoring dashboards with Chart.js
 - [ ] Historical data storage and graphing

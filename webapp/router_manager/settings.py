@@ -33,7 +33,7 @@ DJANGO_APPS = [
 ]
 
 THIRD_PARTY_APPS = [
-    'bootstrap5',
+    'django_bootstrap5',
     'crispy_forms',
     'crispy_bootstrap5',
     'widget_tweaks',

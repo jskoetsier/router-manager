@@ -13,6 +13,16 @@ SECRET_KEY = "your-secret-key-here-change-in-production"
 DEBUG = True
 ALLOWED_HOSTS = ["*"]
 
+# CSRF settings for external access
+CSRF_TRUSTED_ORIGINS = [
+    "https://195.95.177.8:10443",
+    "https://195.95.177.8",
+    "http://195.95.177.8:10443",
+    "http://195.95.177.8",
+    "https://127.0.0.1:10443",
+    "http://127.0.0.1:8000",
+]
+
 # Application definition
 DJANGO_APPS = [
     "django.contrib.admin",

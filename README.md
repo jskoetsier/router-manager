@@ -1,6 +1,6 @@
 # Router Manager
 
-**Version 1.1.2** - A comprehensive web-based router management system for RHEL 9 and Rocky Linux 9 distributions. This application provides an intuitive web interface for managing network configurations, firewall rules, VPN tunnels, and system monitoring.
+**Version 1.1.3** - A comprehensive web-based router management system for RHEL 9 and Rocky Linux 9 distributions. This application provides an intuitive web interface for managing network configurations, firewall rules, VPN tunnels, and system monitoring.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
@@ -8,7 +8,7 @@
 
 ## 🚀 Features
 
-### ✅ Current Features (v1.0.0)
+### ✅ Current Features (v1.1.3)
 - **🖥️ Modern Web Interface**: Responsive Django-based UI with Bootstrap 5 styling
 - **🛡️ Firewall Management**: Complete nftables integration with port forwarding and rule management
 - **🌐 Network Configuration**: Advanced IP forwarding, NAT, and network interface management
@@ -17,6 +17,10 @@
 - **👤 User Management**: Secure authentication with activity logging and audit trails
 - **🔧 Automated Installation**: One-command installation for RHEL 9 and Rocky Linux 9
 - **🔒 Security Hardening**: HTTPS-only, fail2ban integration, and comprehensive logging
+- **🔄 Git-Based Updates**: Automated deployment and update system via Git repository
+- **🌐 Real Network Display**: Fixed interface detection and network status display
+- **📋 Working Routing Table**: Full IPv4/IPv6 routing table display with proper parsing
+- **⚡ Functional UI**: All network pages now work without template syntax errors
 
 ### 🎯 Supported Use Cases
 - **Home Lab Router**: Convert Linux server into feature-rich router

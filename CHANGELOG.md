@@ -103,6 +103,58 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - VPN configurations require proper network planning
 - Regular security updates recommended
 
+## [1.1.3] - 2025-08-27
+
+### Fixed
+- **🌐 Network Interface Display Issues**
+  - Fixed network interface detection and display on network homepage
+  - Added proper sudo permissions for ip commands in Django context
+  - Fixed container-style interface name parsing (e.g., `eth0@if35`)
+  - Network interfaces now correctly display with IP addresses and status
+  
+- **📋 Routing Table Template Errors**
+  - Completely redesigned routing table template to eliminate Django template syntax errors
+  - Removed invalid `{% break %}` statements that caused `TemplateSyntaxError`
+  - Added Python-based route parsing function for structured data display
+  - Enhanced route display with proper destination, gateway, interface, protocol, and metric columns
+  - Added separate IPv4 and IPv6 route sections with clean table formatting
+
+- **🛡️ Firewall Rules Display**
+  - Fixed nftables rules display functionality
+  - Improved error handling for missing NAT tables
+  - Enhanced rules list template with proper rule count and status display
+  - Added better error messaging when nftables commands fail
+
+- **⚙️ Network System Settings**
+  - Fixed IP forwarding status display and toggle functionality
+  - Improved NAT configuration interface with interface selection
+  - Added IPv6 forwarding support alongside IPv4
+  - Enhanced system settings template with better status indicators
+
+- **🎨 Template Syntax and UI Improvements**
+  - Fixed Django template syntax errors across network management pages
+  - Simplified template logic to avoid complex parsing in templates
+  - Improved responsive design for network status displays
+  - Added proper badge styling for status indicators
+
+### Technical Improvements
+- **Backend Enhancements**
+  - Added `parse_route_line()` function for structured route data processing
+  - Improved error handling in network utility functions
+  - Enhanced command execution with proper sudo privileges for system commands
+  - Better container environment compatibility for network interface detection
+
+- **Frontend Enhancements**
+  - Cleaner table displays for network information
+  - Improved status badges and indicators
+  - Better responsive design for network management sections
+  - Enhanced user experience with proper loading states and error messages
+
+### Deployment
+- All fixes have been tested and deployed to remote server infrastructure
+- Network management pages are now fully functional without template errors
+- System status displays work correctly in production environments
+
 ## [1.1.2] - 2025-08-26
 
 ### Fixed

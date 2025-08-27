@@ -13,6 +13,22 @@
 - [x] Systemd service integration
 - [x] Basic documentation and README
 
+## Version 1.1.0 - Git Integration ✅ (Released 2025-08-26)
+- [x] Git-based deployment system
+- [x] Remote deployment scripts
+- [x] Automatic update mechanism via Git
+- [x] Enhanced installation reliability
+- [x] Remote server management capabilities
+
+## Version 1.1.3 - Bug Fixes & UI Improvements ✅ (Released 2025-08-27)
+- [x] Fixed network interface display and permissions
+- [x] Resolved Django template syntax errors in routing table
+- [x] Fixed firewall rules display functionality
+- [x] Enhanced network system settings interface
+- [x] Improved container environment compatibility
+- [x] Added proper sudo permissions for network commands
+- [x] Complete routing table redesign with structured parsing
+
 ## Version 1.1.0 - Enhanced Monitoring
 **Focus**: Advanced system monitoring and alerting capabilities
 - [ ] Advanced monitoring dashboards with Chart.js

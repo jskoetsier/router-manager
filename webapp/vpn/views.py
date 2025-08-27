@@ -10,11 +10,11 @@ from dashboard.utils import log_user_activity
 from .models import VPNTunnel
 from .forms import VPNTunnelForm, QuickVPNForm
 from .utils import (
-    get_strongswan_status,
-    create_ipsec_config,
-    add_tunnel_to_strongswan,
-    remove_tunnel_from_strongswan,
-    get_tunnel_status
+    get_vpn_status,
+    get_ipsec_tunnels,
+    restart_ipsec_service,
+    initiate_tunnel,
+    terminate_tunnel
 )
 
 
@@ -22,20 +22,20 @@ from .utils import (
 def home(request):
     """VPN management home"""
     # Get StrongSwan status
-    strongswan_status = get_strongswan_status()
+    strongswan_status = get_vpn_status()
 
-    # Get tunnel counts
-    total_tunnels = VPNTunnel.objects.count()
-    active_tunnels = VPNTunnel.objects.filter(enabled=True).count()
+    # Get IPSec tunnels from swanctl
+    ipsec_tunnels = get_ipsec_tunnels()
 
-    # Get recent tunnels
-    recent_tunnels = VPNTunnel.objects.order_by('-created_at')[:5]
-
+    # Calculate stats
+    total_tunnels = len(ipsec_tunnels)
+    active_tunnels = len([t for t in ipsec_tunnels if t['status'] == 'ESTABLISHED'])
+    
     context = {
         'strongswan_status': strongswan_status,
         'total_tunnels': total_tunnels,
         'active_tunnels': active_tunnels,
-        'recent_tunnels': recent_tunnels,
+        'ipsec_tunnels': ipsec_tunnels[:5],  # Show first 5
     }
 
     return render(request, 'vpn/home.html', context)
@@ -44,19 +44,42 @@ def home(request):
 @login_required
 def tunnels_list(request):
     """List VPN tunnels"""
-    tunnels = VPNTunnel.objects.all().order_by('name')
+    # Get live IPSec tunnels from swanctl
+    ipsec_tunnels = get_ipsec_tunnels()
+    
+    # Also get database tunnels if they exist
+    db_tunnels = VPNTunnel.objects.all().order_by('name')
 
-    # Add status information to each tunnel
-    for tunnel in tunnels:
-        tunnel.current_status = get_tunnel_status(tunnel.name)
-
-    # Pagination
-    paginator = Paginator(tunnels, 10)
-    page_number = request.GET.get('page')
-    tunnels_page = paginator.get_page(page_number)
+    # Handle tunnel actions
+    if request.method == 'POST':
+        action = request.POST.get('action')
+        tunnel_name = request.POST.get('tunnel_name')
+        
+        if action == 'initiate' and tunnel_name:
+            success, output = initiate_tunnel(tunnel_name)
+            if success:
+                messages.success(request, f'Tunnel "{tunnel_name}" initiated successfully')
+            else:
+                messages.error(request, f'Failed to initiate tunnel "{tunnel_name}": {output}')
+                
+        elif action == 'terminate' and tunnel_name:
+            success, output = terminate_tunnel(tunnel_name)
+            if success:
+                messages.success(request, f'Tunnel "{tunnel_name}" terminated successfully')
+            else:
+                messages.error(request, f'Failed to terminate tunnel "{tunnel_name}": {output}')
+                
+        elif action == 'restart_service':
+            if restart_ipsec_service():
+                messages.success(request, 'IPSec service restarted successfully')
+            else:
+                messages.error(request, 'Failed to restart IPSec service')
+        
+        return redirect('vpn:tunnels_list')
 
     context = {
-        'tunnels': tunnels_page,
+        'ipsec_tunnels': ipsec_tunnels,
+        'db_tunnels': db_tunnels,
     }
 
     return render(request, 'vpn/tunnels_list.html', context)

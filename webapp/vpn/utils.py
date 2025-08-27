@@ -1,299 +1,192 @@
 """
-VPN management utilities for StrongSwan IPSec
+VPN utility functions for Router Manager
 """
 
-import os
-import re
 import subprocess
+import re
+import json
+from datetime import datetime
 
-from django.conf import settings
 
-
-def run_command(command, shell=False, check_output=True):
-    """Run system command safely"""
+def get_vpn_status():
+    """
+    Get overall VPN service status
+    """
     try:
-        if check_output:
-            result = subprocess.run(
-                command,
-                shell=shell,
-                capture_output=True,
-                text=True,
-                timeout=30,
-                check=True,
-            )
-            return {
-                "success": True,
-                "stdout": result.stdout.strip(),
-                "stderr": result.stderr.strip(),
-                "returncode": result.returncode,
-            }
-        else:
-            result = subprocess.run(command, shell=shell, timeout=30, check=True)
-            return {"success": True, "returncode": result.returncode}
-    except subprocess.CalledProcessError as e:
-        return {
-            "success": False,
-            "stdout": e.stdout.strip() if e.stdout else "",
-            "stderr": e.stderr.strip() if e.stderr else "",
-            "returncode": e.returncode,
-            "error": str(e),
-        }
-    except subprocess.TimeoutExpired:
-        return {"success": False, "error": "Command timeout"}
-    except Exception as e:
-        return {"success": False, "error": str(e)}
-
-
-def get_strongswan_status():
-    """Get StrongSwan service status"""
-    try:
-        # Check if strongswan service is running
-        result = run_command(
-            ["/usr/bin/sudo", "/usr/bin/systemctl", "is-active", "strongswan"]
-        )
-        service_active = result["success"] and result["stdout"].strip() == "active"
-
-        # Get connection status
-        connections = []
-        if service_active:
-            conn_result = run_command(["/usr/bin/sudo", "/usr/sbin/ipsec", "status"])
-            if conn_result["success"]:
-                # Parse connection status
-                for line in conn_result["stdout"].split("\n"):
-                    if (
-                        "ESTABLISHED" in line
-                        or "CONNECTING" in line
-                        or "INSTALLED" in line
-                    ):
-                        connections.append(line.strip())
-
-        return {
-            "service_active": service_active,
-            "connections": connections,
-            "connection_count": len(connections),
-        }
-    except Exception as e:
-        return {"service_active": False, "error": str(e)}
-
-
-def create_ipsec_config(
-    tunnel_name, local_id, remote_id, local_subnet, remote_subnet, psk
-):
-    """Create IPSec configuration files supporting IPs, hostnames, and IKE IDs"""
-    try:
-        # Determine if we're using IDs or IP addresses
-        local_directive = "leftid" if not validate_ip_address(local_id) else "left"
-        remote_directive = "rightid" if not validate_ip_address(remote_id) else "right"
+        # Check StrongSwan service status
+        result = subprocess.run(['systemctl', 'is-active', 'strongswan'], 
+                              capture_output=True, text=True)
         
-        # Create ipsec.conf entry with flexible identity support
-        ipsec_conf_entry = f"""
-conn {tunnel_name}
-    {local_directive}={local_id}
-    leftsubnet={local_subnet}
-    {remote_directive}={remote_id}
-    rightsubnet={remote_subnet}
-    authby=secret
-    auto=start
-    type=tunnel
-    keyexchange=ikev2
-    ike=aes256-sha256-modp2048!
-    esp=aes256-sha256!
-    dpdaction=restart
-    dpddelay=30s
-    dpdtimeout=120s
-    rekey=yes
-    margintime=9m
-    keylife=20m
-    rekeymargin=3m
-"""
-
-        # Create ipsec.secrets entry - support both IP and ID-based authentication
-        if validate_ip_address(local_id) and validate_ip_address(remote_id):
-            # Both are IP addresses - use traditional format
-            ipsec_secrets_entry = f'{local_id} {remote_id} : PSK "{psk}"\n'
-        else:
-            # At least one is a hostname/ID - use %any for more flexible matching
-            ipsec_secrets_entry = f'%any %any : PSK "{psk}"\n'
-
+        service_status = result.stdout.strip()
+        
         return {
-            "success": True,
-            "ipsec_conf": ipsec_conf_entry,
-            "ipsec_secrets": ipsec_secrets_entry,
+            'service_running': service_status == 'active',
+            'service_status': service_status,
+            'last_checked': datetime.now()
+        }
+    except Exception as e:
+        return {
+            'service_running': False,
+            'service_status': f'Error: {e}',
+            'last_checked': datetime.now()
         }
 
-    except Exception as e:
-        return {"success": False, "error": str(e)}
 
-
-def add_tunnel_to_strongswan(tunnel_config):
-    """Add tunnel configuration to StrongSwan"""
+def restart_vpn_service():
+    """
+    Restart the VPN service
+    """
     try:
-        results = []
-
-        # Backup existing configuration
-        result = run_command(
-            [
-                "/usr/bin/sudo",
-                "/usr/bin/cp",
-                "/etc/strongswan/ipsec.conf",
-                "/etc/strongswan/ipsec.conf.bak",
-            ]
-        )
-
-        # Append new tunnel configuration to ipsec.conf
-        script_content = f"""#!/bin/bash
-echo '{tunnel_config["ipsec_conf"]}' >> /etc/strongswan/ipsec.conf
-"""
-
-        script_path = "/tmp/add_ipsec_config.sh"
-        with open(script_path, "w") as f:
-            f.write(script_content)
-
-        os.chmod(script_path, 0o755)
-        result = run_command(["/usr/bin/sudo", "/bin/bash", script_path])
-        results.append(
-            ("Add ipsec.conf entry", result["success"], result.get("error", ""))
-        )
-
-        # Add PSK to ipsec.secrets
-        secrets_script = f"""#!/bin/bash
-echo '{tunnel_config["ipsec_secrets"]}' >> /etc/strongswan/ipsec.secrets
-"""
-
-        secrets_script_path = "/tmp/add_ipsec_secrets.sh"
-        with open(secrets_script_path, "w") as f:
-            f.write(secrets_script)
-
-        os.chmod(secrets_script_path, 0o755)
-        result = run_command(["/usr/bin/sudo", "/bin/bash", secrets_script_path])
-        results.append(
-            ("Add ipsec.secrets entry", result["success"], result.get("error", ""))
-        )
-
-        # Reload StrongSwan configuration
-        result = run_command(["/usr/bin/sudo", "/usr/sbin/ipsec", "reload"])
-        results.append(
-            ("Reload StrongSwan", result["success"], result.get("error", ""))
-        )
-
-        # Start the tunnel
-        result = run_command(
-            [
-                "/usr/bin/sudo",
-                "/usr/sbin/ipsec",
-                "up",
-                tunnel_config.get("name", "tunnel"),
-            ]
-        )
-        results.append(("Start tunnel", result["success"], result.get("error", "")))
-
-        # Clean up temporary files
-        for temp_file in [script_path, secrets_script_path]:
-            if os.path.exists(temp_file):
-                os.remove(temp_file)
-
-        return results
-
-    except Exception as e:
-        return [("Add tunnel configuration", False, str(e))]
-
-
-def remove_tunnel_from_strongswan(tunnel_name):
-    """Remove tunnel configuration from StrongSwan"""
-    try:
-        results = []
-
-        # Stop the tunnel first
-        result = run_command(["/usr/bin/sudo", "/usr/sbin/ipsec", "down", tunnel_name])
-        results.append(("Stop tunnel", result["success"], result.get("error", "")))
-
-        # Remove from ipsec.conf (create a script to do this safely)
-        script_content = f"""#!/bin/bash
-# Backup current config
-cp /etc/strongswan/ipsec.conf /etc/strongswan/ipsec.conf.bak
-
-# Remove tunnel configuration
-awk '
-BEGIN {{ in_conn = 0 }}
-/^conn {tunnel_name}$/ {{ in_conn = 1; next }}
-/^conn / && in_conn {{ in_conn = 0 }}
-/^$/ && in_conn {{ in_conn = 0 }}
-!in_conn {{ print }}
-' /etc/strongswan/ipsec.conf.bak > /etc/strongswan/ipsec.conf
-"""
-
-        script_path = "/tmp/remove_ipsec_config.sh"
-        with open(script_path, "w") as f:
-            f.write(script_content)
-
-        os.chmod(script_path, 0o755)
-        result = run_command(["/usr/bin/sudo", "/bin/bash", script_path])
-        results.append(
-            ("Remove ipsec.conf entry", result["success"], result.get("error", ""))
-        )
-
-        # Reload StrongSwan configuration
-        result = run_command(["/usr/bin/sudo", "/usr/sbin/ipsec", "reload"])
-        results.append(
-            ("Reload StrongSwan", result["success"], result.get("error", ""))
-        )
-
-        # Clean up
-        if os.path.exists(script_path):
-            os.remove(script_path)
-
-        return results
-
-    except Exception as e:
-        return [("Remove tunnel configuration", False, str(e))]
-
-
-def get_tunnel_status(tunnel_name):
-    """Get status of a specific tunnel"""
-    try:
-        result = run_command(
-            ["/usr/bin/sudo", "/usr/sbin/ipsec", "status", tunnel_name]
-        )
-        if result["success"]:
-            status_text = result["stdout"]
-            if "ESTABLISHED" in status_text:
-                return "connected"
-            elif "CONNECTING" in status_text:
-                return "connecting"
-            else:
-                return "disconnected"
-        else:
-            return "unknown"
+        result = subprocess.run(['sudo', 'systemctl', 'restart', 'strongswan'], 
+                              capture_output=True, text=True, timeout=30)
+        return result.returncode == 0
     except Exception:
-        return "error"
-
-
-def validate_ip_address(ip):
-    """Validate IP address format"""
-    import ipaddress
-
-    try:
-        ipaddress.ip_address(ip)
-        return True
-    except ValueError:
         return False
 
 
-def validate_subnet(subnet):
-    """Validate subnet format (CIDR notation)"""
-    import ipaddress
-
+def get_connected_clients():
+    """
+    Get list of currently connected VPN clients
+    """
     try:
-        ipaddress.ip_network(subnet, strict=False)
-        return True
-    except ValueError:
+        # This is a placeholder - implement based on your VPN solution
+        # For OpenVPN, you might read from status files
+        # For WireGuard, you might use 'wg show'
+        return []
+    except Exception as e:
+        return []
+
+
+def get_ipsec_tunnels():
+    """
+    Get IPSec tunnel status from swanctl
+    """
+    tunnels = []
+    try:
+        # Get tunnel status using swanctl
+        result = subprocess.run(['sudo', 'swanctl', '--list-sas'], 
+                              capture_output=True, text=True, timeout=10)
+        
+        if result.returncode == 0:
+            lines = result.stdout.split('\n')
+            current_tunnel = {}
+            
+            for line in lines:
+                line = line.strip()
+                if ':' in line and ('ESTABLISHED' in line or 'CONNECTING' in line or 'INSTALLED' in line):
+                    # Parse tunnel name and status
+                    parts = line.split(':')
+                    if len(parts) >= 2:
+                        name = parts[0].strip()
+                        status_part = parts[1].strip()
+                        
+                        if 'ESTABLISHED' in status_part:
+                            status = 'ESTABLISHED'
+                        elif 'CONNECTING' in status_part:
+                            status = 'CONNECTING'
+                        elif 'INSTALLED' in status_part:
+                            status = 'INSTALLED'
+                        else:
+                            status = 'UNKNOWN'
+                        
+                        # Extract remote IP if available
+                        remote_ip = 'Unknown'
+                        if 'to ' in status_part:
+                            try:
+                                remote_ip = status_part.split('to ')[1].split()[0]
+                            except:
+                                pass
+                        
+                        current_tunnel = {
+                            'name': name,
+                            'status': status,
+                            'remote_ip': remote_ip,
+                            'type': 'IPSec',
+                            'protocol': 'IKEv2' if 'IKEv2' in status_part else 'IKE'
+                        }
+                        tunnels.append(current_tunnel)
+                
+                elif current_tunnel and ('bytes_i' in line or 'bytes_o' in line):
+                    # Parse traffic statistics
+                    if 'bytes_i' in line:
+                        try:
+                            current_tunnel['bytes_in'] = line.split('bytes_i')[1].split(',')[0].strip()
+                        except:
+                            pass
+                    if 'bytes_o' in line:
+                        try:
+                            current_tunnel['bytes_out'] = line.split('bytes_o')[1].split(',')[0].strip()
+                        except:
+                            pass
+        
+        # Also get configured connections that might not be active
+        result_conns = subprocess.run(['sudo', 'swanctl', '--list-conns'], 
+                                    capture_output=True, text=True, timeout=10)
+        
+        if result_conns.returncode == 0:
+            active_names = [t['name'] for t in tunnels]
+            lines = result_conns.stdout.split('\n')
+            
+            for line in lines:
+                if ':' in line and 'IKEv' in line:
+                    name = line.split(':')[0].strip()
+                    if name not in active_names:
+                        tunnels.append({
+                            'name': name,
+                            'status': 'CONFIGURED',
+                            'remote_ip': 'Not connected',
+                            'type': 'IPSec',
+                            'protocol': 'IKEv2' if 'IKEv2' in line else 'IKE',
+                            'bytes_in': '0',
+                            'bytes_out': '0'
+                        })
+        
+    except Exception as e:
+        # Fallback with dummy data to show the interface works
+        tunnels.append({
+            'name': 'Error retrieving tunnels',
+            'status': 'ERROR',
+            'remote_ip': str(e),
+            'type': 'IPSec',
+            'protocol': 'N/A',
+            'bytes_in': '0',
+            'bytes_out': '0'
+        })
+    
+    return tunnels
+
+
+def restart_ipsec_service():
+    """
+    Restart IPSec service
+    """
+    try:
+        result = subprocess.run(['sudo', 'systemctl', 'restart', 'strongswan'], 
+                              capture_output=True, text=True, timeout=30)
+        return result.returncode == 0
+    except Exception:
         return False
 
 
-def generate_psk(length=32):
-    """Generate a random pre-shared key"""
-    import secrets
-    import string
+def initiate_tunnel(tunnel_name):
+    """
+    Initiate an IPSec tunnel
+    """
+    try:
+        result = subprocess.run(['sudo', 'swanctl', '--initiate', '--child', tunnel_name], 
+                              capture_output=True, text=True, timeout=30)
+        return result.returncode == 0, result.stdout + result.stderr
+    except Exception as e:
+        return False, str(e)
 
-    alphabet = string.ascii_letters + string.digits + "!@#$%^&*"
-    return "".join(secrets.choice(alphabet) for _ in range(length))
+
+def terminate_tunnel(tunnel_name):
+    """
+    Terminate an IPSec tunnel
+    """
+    try:
+        result = subprocess.run(['sudo', 'swanctl', '--terminate', '--ike', tunnel_name], 
+                              capture_output=True, text=True, timeout=30)
+        return result.returncode == 0, result.stdout + result.stderr
+    except Exception as e:
+        return False, str(e)

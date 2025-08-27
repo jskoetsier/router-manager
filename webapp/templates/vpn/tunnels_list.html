@@ -1,31 +1,166 @@
 {% extends 'base.html' %}
+{% load static %}
 
 {% block title %}VPN Tunnels - Router Manager{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-12">
-        <h1 class="mb-4">
-            <i class="fas fa-link"></i> VPN Tunnels
-        </h1>
-    </div>
-</div>
-
-<div class="row">
-    <div class="col-12">
-        <div class="card shadow">
-            <div class="card-header py-3 d-flex justify-content-between align-items-center">
-                <h6 class="m-0 font-weight-bold text-primary">IPSec VPN Tunnels</h6>
-                <a href="{% url 'vpn:add_tunnel' %}" class="btn btn-primary btn-sm">
-                    <i class="fas fa-plus"></i> Add Tunnel
-                </a>
-            </div>
-            <div class="card-body">
-                <div class="alert alert-info">
-                    <i class="fas fa-info-circle"></i> VPN tunnel management will be implemented in future versions.
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="page-header">
+                <h1>VPN Tunnels</h1>
+                <div class="page-actions">
+                    <form method="post" style="display: inline;">
+                        {% csrf_token %}
+                        <input type="hidden" name="action" value="restart_service">
+                        <button type="submit" class="btn btn-warning">
+                            <i class="fas fa-sync"></i> Restart IPSec Service
+                        </button>
+                    </form>
+                    <a href="{% url 'vpn:add_tunnel' %}" class="btn btn-primary ml-2">
+                        <i class="fas fa-plus"></i> Add Tunnel
+                    </a>
                 </div>
             </div>
+
+            <!-- IPSec Tunnels from swanctl -->
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-shield-alt"></i> IPSec Tunnels</h5>
+                </div>
+                <div class="card-body">
+                    {% if ipsec_tunnels %}
+                        <div class="table-responsive">
+                            <table class="table table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Status</th>
+                                        <th>Remote IP</th>
+                                        <th>Type</th>
+                                        <th>Protocol</th>
+                                        <th>Traffic In</th>
+                                        <th>Traffic Out</th>
+                                        <th>Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for tunnel in ipsec_tunnels %}
+                                    <tr>
+                                        <td><strong>{{ tunnel.name }}</strong></td>
+                                        <td>
+                                            {% if tunnel.status == 'ESTABLISHED' %}
+                                                <span class="badge badge-success">{{ tunnel.status }}</span>
+                                            {% elif tunnel.status == 'CONNECTING' %}
+                                                <span class="badge badge-warning">{{ tunnel.status }}</span>
+                                            {% elif tunnel.status == 'CONFIGURED' %}
+                                                <span class="badge badge-secondary">{{ tunnel.status }}</span>
+                                            {% else %}
+                                                <span class="badge badge-danger">{{ tunnel.status }}</span>
+                                            {% endif %}
+                                        </td>
+                                        <td>{{ tunnel.remote_ip|default:"N/A" }}</td>
+                                        <td>{{ tunnel.type }}</td>
+                                        <td>{{ tunnel.protocol }}</td>
+                                        <td>{{ tunnel.bytes_in|default:"0" }} bytes</td>
+                                        <td>{{ tunnel.bytes_out|default:"0" }} bytes</td>
+                                        <td>
+                                            {% if tunnel.status == 'CONFIGURED' %}
+                                                <form method="post" style="display: inline;">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="action" value="initiate">
+                                                    <input type="hidden" name="tunnel_name" value="{{ tunnel.name }}">
+                                                    <button type="submit" class="btn btn-sm btn-success">
+                                                        <i class="fas fa-play"></i> Start
+                                                    </button>
+                                                </form>
+                                            {% elif tunnel.status == 'ESTABLISHED' %}
+                                                <form method="post" style="display: inline;">
+                                                    {% csrf_token %}
+                                                    <input type="hidden" name="action" value="terminate">
+                                                    <input type="hidden" name="tunnel_name" value="{{ tunnel.name }}">
+                                                    <button type="submit" class="btn btn-sm btn-danger">
+                                                        <i class="fas fa-stop"></i> Stop
+                                                    </button>
+                                                </form>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    {% else %}
+                        <div class="alert alert-info">
+                            <i class="fas fa-info-circle"></i>
+                            No IPSec tunnels found. Configure tunnels using swanctl or add them through the Router Manager.
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            {% if db_tunnels %}
+            <!-- Database Tunnels (if any exist) -->
+            <div class="card mt-4">
+                <div class="card-header">
+                    <h5 class="mb-0"><i class="fas fa-database"></i> Configured Tunnels (Database)</h5>
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-striped">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Type</th>
+                                    <th>Local ID</th>
+                                    <th>Remote ID</th>
+                                    <th>Local Subnet</th>
+                                    <th>Remote Subnet</th>
+                                    <th>Enabled</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for tunnel in db_tunnels %}
+                                <tr>
+                                    <td><strong>{{ tunnel.name }}</strong></td>
+                                    <td>{{ tunnel.get_tunnel_type_display }}</td>
+                                    <td>{{ tunnel.local_id }}</td>
+                                    <td>{{ tunnel.remote_id }}</td>
+                                    <td>{{ tunnel.local_subnet }}</td>
+                                    <td>{{ tunnel.remote_subnet }}</td>
+                                    <td>
+                                        {% if tunnel.enabled %}
+                                            <span class="badge badge-success">Enabled</span>
+                                        {% else %}
+                                            <span class="badge badge-secondary">Disabled</span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <a href="{% url 'vpn:edit_tunnel' tunnel.id %}" class="btn btn-sm btn-warning">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <a href="{% url 'vpn:delete_tunnel' tunnel.id %}" class="btn btn-sm btn-danger" 
+                                           onclick="return confirm('Are you sure you want to delete this tunnel?')">
+                                            <i class="fas fa-trash"></i>
+                                        </a>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>
+
+<script>
+// Auto-refresh tunnel status every 30 seconds
+setInterval(function() {
+    location.reload();
+}, 30000);
+</script>
 {% endblock %}

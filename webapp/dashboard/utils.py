@@ -1,13 +1,17 @@
 """
-Utility functions for Router Manager dashboard
+Dashboard utility functions for Router Manager
 """
 
+from django.utils import timezone
+from django.core.cache import cache
+from django.db.models import Count, Q
+import subprocess
+import psutil
+import os
+import time
 import platform
 import socket
-import subprocess
-from datetime import datetime
-
-import psutil
+from datetime import datetime, timedelta
 
 from .models import UserActivity
 

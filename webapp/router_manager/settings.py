@@ -18,6 +18,7 @@ ALLOWED_HOSTS = ['*']  # Configure properly for production
 # CSRF configuration for HTTPS
 CSRF_TRUSTED_ORIGINS = [
     'https://192.168.1.253:10443',
+    'https://195.95.177.8:10443',
     'https://localhost:10443',
     'https://127.0.0.1:10443',
 ]

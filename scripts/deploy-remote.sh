@@ -8,6 +8,7 @@ set -euo pipefail
 # Default configuration
 REMOTE_HOST="192.168.1.253"
 REMOTE_USER="root"
+REMOTE_PORT="22"
 REPO_URL="https://github.com/jskoetsier/router-manager.git"
 BRANCH="main"
 
@@ -37,14 +38,14 @@ print_error() {
 
 # Function to check if SSH connection works
 check_ssh_connection() {
-    print_status "Testing SSH connection to $REMOTE_USER@$REMOTE_HOST..."
+    print_status "Testing SSH connection to $REMOTE_USER@$REMOTE_HOST:$REMOTE_PORT..."
     
-    if ssh -o ConnectTimeout=5 -o BatchMode=yes "$REMOTE_USER@$REMOTE_HOST" "echo 'SSH connection successful'" &>/dev/null; then
+    if ssh -p "$REMOTE_PORT" -o ConnectTimeout=5 -o BatchMode=yes "$REMOTE_USER@$REMOTE_HOST" "echo 'SSH connection successful'" &>/dev/null; then
         print_success "SSH connection established"
     else
-        print_error "Cannot establish SSH connection to $REMOTE_USER@$REMOTE_HOST"
+        print_error "Cannot establish SSH connection to $REMOTE_USER@$REMOTE_HOST:$REMOTE_PORT"
         print_error "Please ensure:"
-        print_error "  1. The remote host is reachable"
+        print_error "  1. The remote host is reachable on port $REMOTE_PORT"
         print_error "  2. SSH key authentication is set up"
         print_error "  3. The remote user has sudo/root privileges"
         exit 1
@@ -55,7 +56,7 @@ check_ssh_connection() {
 check_remote_os() {
     print_status "Checking remote operating system..."
     
-    OS_INFO=$(ssh "$REMOTE_USER@$REMOTE_HOST" "cat /etc/os-release" 2>/dev/null || echo "")
+    OS_INFO=$(ssh -p "$REMOTE_PORT" "$REMOTE_USER@$REMOTE_HOST" "cat /etc/os-release" 2>/dev/null || echo "")
     
     if echo "$OS_INFO" | grep -q 'ID="rocky"' && echo "$OS_INFO" | grep -q 'VERSION_ID="9'; then
         print_success "Rocky Linux 9 detected on remote host"
@@ -76,11 +77,11 @@ check_remote_os() {
 install_git_remote() {
     print_status "Checking if git is installed on remote host..."
     
-    if ssh "$REMOTE_USER@$REMOTE_HOST" "command -v git &>/dev/null"; then
+    if ssh -p "$REMOTE_PORT" "$REMOTE_USER@$REMOTE_HOST" "command -v git &>/dev/null"; then
         print_success "Git is already installed on remote host"
     else
         print_status "Installing git on remote host..."
-        ssh "$REMOTE_USER@$REMOTE_HOST" "dnf install -y git" || {
+        ssh -p "$REMOTE_PORT" "$REMOTE_USER@$REMOTE_HOST" "dnf install -y git" || {
             print_error "Failed to install git on remote host"
             exit 1
         }
@@ -93,11 +94,11 @@ setup_repository_remote() {
     print_status "Setting up Router Manager repository on remote host..."
     
     # Check if repository already exists
-    if ssh "$REMOTE_USER@$REMOTE_HOST" "test -d /opt/router-manager/.git"; then
+    if ssh -p "$REMOTE_PORT" "$REMOTE_USER@$REMOTE_HOST" "test -d /opt/router-manager/.git"; then
         print_status "Repository exists on remote host, updating..."
         
         # Update repository
-        ssh "$REMOTE_USER@$REMOTE_HOST" "
+        ssh -p "$REMOTE_PORT" "$REMOTE_USER@$REMOTE_HOST" "
             cd /opt/router-manager
             # Backup any local changes
             if [[ -n \"\$(git status --porcelain)\" ]]; then
@@ -121,7 +122,7 @@ setup_repository_remote() {
         print_status "Cloning repository to remote host..."
         
         # Remove existing directory if it exists but is not a git repo
-        ssh "$REMOTE_USER@$REMOTE_HOST" "
+        ssh -p "$REMOTE_PORT" "$REMOTE_USER@$REMOTE_HOST" "
             if [[ -d /opt/router-manager ]]; then
                 echo 'Removing existing non-git directory'
                 rm -rf /opt/router-manager
@@ -129,7 +130,7 @@ setup_repository_remote() {
         "
         
         # Clone repository
-        ssh "$REMOTE_USER@$REMOTE_HOST" "
+        ssh -p "$REMOTE_PORT" "$REMOTE_USER@$REMOTE_HOST" "
             git clone $REPO_URL /opt/router-manager
             cd /opt/router-manager
             git checkout $BRANCH
@@ -142,7 +143,7 @@ setup_repository_remote() {
     fi
     
     # Show current version
-    VERSION=$(ssh "$REMOTE_USER@$REMOTE_HOST" "cat /opt/router-manager/VERSION 2>/dev/null" || echo "Unknown")
+    VERSION=$(ssh -p "$REMOTE_PORT" "$REMOTE_USER@$REMOTE_HOST" "cat /opt/router-manager/VERSION 2>/dev/null" || echo "Unknown")
     print_success "Router Manager version on remote host: $VERSION"
 }
 
@@ -150,7 +151,7 @@ setup_repository_remote() {
 run_installation_remote() {
     print_status "Running Router Manager installation on remote host..."
     
-    ssh "$REMOTE_USER@$REMOTE_HOST" "
+    ssh -p "$REMOTE_PORT" "$REMOTE_USER@$REMOTE_HOST" "
         cd /opt/router-manager
         chmod +x scripts/install-from-git.sh
         ./scripts/install-from-git.sh --repo-url $REPO_URL --branch $BRANCH
@@ -168,18 +169,18 @@ verify_installation() {
     print_status "Verifying installation on remote host..."
     
     # Check if service is running
-    if ssh "$REMOTE_USER@$REMOTE_HOST" "systemctl is-active router-manager &>/dev/null"; then
+    if ssh -p "$REMOTE_PORT" "$REMOTE_USER@$REMOTE_HOST" "systemctl is-active router-manager &>/dev/null"; then
         print_success "Router Manager service is running"
     else
         print_warning "Router Manager service is not running, attempting to start..."
-        ssh "$REMOTE_USER@$REMOTE_HOST" "systemctl start router-manager" || {
+        ssh -p "$REMOTE_PORT" "$REMOTE_USER@$REMOTE_HOST" "systemctl start router-manager" || {
             print_error "Failed to start Router Manager service"
             return 1
         }
     fi
     
     # Check web interface accessibility
-    REMOTE_IP=$(ssh "$REMOTE_USER@$REMOTE_HOST" "hostname -I | awk '{print \$1}'" 2>/dev/null || echo "$REMOTE_HOST")
+    REMOTE_IP=$(ssh -p "$REMOTE_PORT" "$REMOTE_USER@$REMOTE_HOST" "hostname -I | awk '{print \$1}'" 2>/dev/null || echo "$REMOTE_HOST")
     
     print_status "Testing web interface accessibility..."
     if curl -k -s "https://$REMOTE_IP" --connect-timeout 10 &>/dev/null; then
@@ -192,8 +193,8 @@ verify_installation() {
 
 # Function to show deployment summary
 show_deployment_summary() {
-    REMOTE_IP=$(ssh "$REMOTE_USER@$REMOTE_HOST" "hostname -I | awk '{print \$1}'" 2>/dev/null || echo "$REMOTE_HOST")
-    VERSION=$(ssh "$REMOTE_USER@$REMOTE_HOST" "cat /opt/router-manager/VERSION 2>/dev/null" || echo "Unknown")
+    REMOTE_IP=$(ssh -p "$REMOTE_PORT" "$REMOTE_USER@$REMOTE_HOST" "hostname -I | awk '{print \$1}'" 2>/dev/null || echo "$REMOTE_HOST")
+    VERSION=$(ssh -p "$REMOTE_PORT" "$REMOTE_USER@$REMOTE_HOST" "cat /opt/router-manager/VERSION 2>/dev/null" || echo "Unknown")
     
     print_success "Router Manager deployment completed!"
     echo
@@ -227,15 +228,17 @@ show_help() {
     echo "Options:"
     echo "  --host HOST       Remote host IP or hostname (default: $REMOTE_HOST)"
     echo "  --user USER       Remote SSH user (default: $REMOTE_USER)"
+    echo "  --port PORT       Remote SSH port (default: $REMOTE_PORT)"
     echo "  --repo-url URL    Git repository URL (default: $REPO_URL)"
     echo "  --branch BRANCH   Git branch to deploy (default: $BRANCH)"
     echo "  --help, -h        Show this help message"
     echo
     echo "Examples:"
-    echo "  $0                                    # Deploy to default host"
-    echo "  $0 --host 10.0.0.100                # Deploy to specific host"
-    echo "  $0 --host 10.0.0.100 --user admin   # Deploy with specific user"
-    echo "  $0 --branch develop                  # Deploy from develop branch"
+    echo "  $0                                              # Deploy to default host"
+    echo "  $0 --host 10.0.0.100                          # Deploy to specific host"
+    echo "  $0 --host 10.0.0.100 --user admin             # Deploy with specific user"
+    echo "  $0 --host 10.0.0.100 --port 22123             # Deploy with custom SSH port"
+    echo "  $0 --branch develop                            # Deploy from develop branch"
 }
 
 # Parse command line arguments
@@ -247,6 +250,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --user)
             REMOTE_USER="$2"
+            shift 2
+            ;;
+        --port)
+            REMOTE_PORT="$2"
             shift 2
             ;;
         --repo-url)

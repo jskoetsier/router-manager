@@ -141,7 +141,13 @@ run_installation() {
             fi
             ;;
         "rhel9")
-            if [[ -f "scripts/install-rhel9.sh" ]]; then
+            # First try the no-subscription version
+            if [[ -f "scripts/install-rhel9-no-subscription.sh" ]]; then
+                print_status "Using RHEL 9 installation script (no subscription required)"
+                chmod +x scripts/install-rhel9-no-subscription.sh
+                ./scripts/install-rhel9-no-subscription.sh --from-git
+            elif [[ -f "scripts/install-rhel9.sh" ]]; then
+                print_warning "Using standard RHEL 9 installation script (subscription required)"
                 chmod +x scripts/install-rhel9.sh
                 ./scripts/install-rhel9.sh --from-git
             else

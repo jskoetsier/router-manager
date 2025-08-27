@@ -183,7 +183,8 @@ setup_postgresql() {
 
     # Initialize database if not already done
     if [[ ! -f /var/lib/pgsql/data/PG_VERSION ]]; then
-        postgresql-setup --initdb &>> "$LOG_FILE"
+        print_status "Initializing PostgreSQL database..."
+        sudo -u postgres initdb -D /var/lib/pgsql/data --auth-local=trust --auth-host=md5 &>> "$LOG_FILE"
     fi
 
     # Start and enable PostgreSQL first (before configuration changes)

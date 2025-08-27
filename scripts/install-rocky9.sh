@@ -24,7 +24,7 @@ LOG_FILE="/var/log/router-manager-install.log"
 INSTALL_DIR="/opt/router-manager"
 CONFIG_DIR="/etc/router-manager"
 SERVICE_USER="routermgr"
-WEB_PORT="8443"
+WEB_PORT="10443"
 
 # Function to print colored output
 print_status() {
@@ -292,7 +292,7 @@ table inet filter {
         tcp dport 22 accept
 
         # Allow Router Manager web interface
-        tcp dport 8443 accept
+        tcp dport 10443 accept
 
         # Allow ICMP
         ip protocol icmp accept
@@ -349,7 +349,7 @@ server {
 }
 
 server {
-    listen 443 ssl http2;
+    listen 10443 ssl http2;
 
     ssl_certificate $INSTALL_DIR/ssl/server.crt;
     ssl_certificate_key $INSTALL_DIR/ssl/server.key;
@@ -503,7 +503,7 @@ setup_fail2ban() {
     cat > /etc/fail2ban/jail.d/router-manager.conf << 'EOF'
 [router-manager]
 enabled = true
-port = 8443,443,80
+port = 10443,80
 logpath = /var/log/router-manager/nginx/access.log
 maxretry = 5
 bantime = 3600

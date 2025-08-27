@@ -107,7 +107,7 @@ done
 
 ### 🖥️ Access Web Interface
 ```
-https://your-server-ip
+https://your-server-ip:10443
 ```
 
 ### 🔑 Default Credentials

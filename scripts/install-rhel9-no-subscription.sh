@@ -186,21 +186,44 @@ setup_postgresql() {
         postgresql-setup --initdb &>> "$LOG_FILE"
     fi
 
-    # Configure PostgreSQL authentication for local connections
-    sed -i 's/local   all             all                                     peer/local   all             all                                     md5/' /var/lib/pgsql/data/pg_hba.conf
-    sed -i 's/host    all             all             127.0.0.1\/32            ident/host    all             all             127.0.0.1\/32            md5/' /var/lib/pgsql/data/pg_hba.conf
-
-    # Start and enable PostgreSQL
+    # Start and enable PostgreSQL first (before configuration changes)
     systemctl enable postgresql &>> "$LOG_FILE"
     systemctl start postgresql &>> "$LOG_FILE"
 
-    # Create database and user
-    sudo -u postgres psql -c "CREATE USER routermgr WITH PASSWORD 'routermgr123';" &>> "$LOG_FILE" || true
-    sudo -u postgres psql -c "CREATE DATABASE routermanager OWNER routermgr;" &>> "$LOG_FILE" || true
-    sudo -u postgres psql -c "GRANT ALL PRIVILEGES ON DATABASE routermanager TO routermgr;" &>> "$LOG_FILE" || true
+    # Wait for PostgreSQL to be ready
+    sleep 5
 
-    # Restart PostgreSQL to apply configuration changes
+    # Configure PostgreSQL authentication for local connections
+    # First allow trust authentication temporarily
+    cp /var/lib/pgsql/data/pg_hba.conf /var/lib/pgsql/data/pg_hba.conf.backup
+    sed -i 's/local   all             all                                     peer/local   all             all                                     trust/' /var/lib/pgsql/data/pg_hba.conf
+    sed -i 's/host    all             all             127.0.0.1\/32            ident/host    all             all             127.0.0.1\/32            trust/' /var/lib/pgsql/data/pg_hba.conf
+
+    # Reload PostgreSQL configuration
+    systemctl reload postgresql &>> "$LOG_FILE"
+
+    # Wait for reload to complete
+    sleep 3
+
+    # Create database and user using trust authentication
+    sudo -u postgres psql -d template1 -c "CREATE USER routermgr WITH PASSWORD 'routermgr123';" &>> "$LOG_FILE" || true
+    sudo -u postgres psql -d template1 -c "CREATE DATABASE routermanager OWNER routermgr;" &>> "$LOG_FILE" || true
+    sudo -u postgres psql -d template1 -c "GRANT ALL PRIVILEGES ON DATABASE routermanager TO routermgr;" &>> "$LOG_FILE" || true
+
+    # Now set proper authentication (md5 for password authentication)
+    sed -i 's/local   all             all                                     trust/local   all             all                                     md5/' /var/lib/pgsql/data/pg_hba.conf
+    sed -i 's/host    all             all             127.0.0.1\/32            trust/host    all             all             127.0.0.1\/32            md5/' /var/lib/pgsql/data/pg_hba.conf
+
+    # Restart PostgreSQL to apply final configuration changes
     systemctl restart postgresql &>> "$LOG_FILE"
+
+    # Wait for PostgreSQL to be ready
+    sleep 5
+
+    # Test database connection
+    PGPASSWORD='routermgr123' psql -h localhost -U routermgr -d routermanager -c "SELECT 1;" &>> "$LOG_FILE" || {
+        print_warning "Database connection test failed, but continuing with installation"
+    }
 
     print_success "PostgreSQL configured"
 }

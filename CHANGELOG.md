@@ -103,6 +103,93 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - VPN configurations require proper network planning
 - Regular security updates recommended
 
+## [1.2.0] - 2025-08-27
+
+### Added
+- **🔥 Complete nftables Firewall Management**
+  - Full web-based firewall rule creation and management interface
+  - Real-time rule application to live nftables configuration
+  - Comprehensive form validation for IP addresses, ports, and CIDR notation
+  - Database persistence for rule management and audit trails
+  - Support for TCP, UDP, ICMP, and all protocols with flexible filtering
+
+- **🚀 Advanced Port Forwarding (DNAT)**
+  - Complete DNAT rule configuration through web interface
+  - External to internal port mapping with protocol selection
+  - Automatic forward chain rule creation for allowed traffic
+  - Port conflict detection and validation
+  - Live application of port forwarding rules to nftables
+
+- **📊 Enhanced Rule Visualization**
+  - Clean, organized display of firewall rules in structured tables
+  - Separate views for database-saved rules and active system rules
+  - Protocol and action color-coded badges for quick identification
+  - Rule priority ordering and status indicators
+  - Collapsible raw nftables configuration view for advanced users
+
+- **🛠️ Advanced Form System**
+  - Django ModelForms with comprehensive validation
+  - IP address and CIDR notation validation
+  - Port range validation (1-65535)
+  - Protocol-specific field validation (ports only for TCP/UDP)
+  - User-friendly error messages and form field help text
+
+- **⚡ Live System Integration**
+  - Rules applied immediately to nftables upon creation
+  - Automatic table and chain creation (filter, nat, input, forward, prerouting)
+  - Comment-based rule identification for management
+  - Error handling and rollback on failed rule application
+  - Success/failure feedback to users through Django messages
+
+### Enhanced
+- **🎨 User Interface Improvements**
+  - Fixed Django template syntax errors preventing page loads
+  - Improved responsive design for rule management pages
+  - Better form layouts with examples and validation feedback
+  - Enhanced status displays with proper badge styling
+  - Professional rule listing with sortable tables
+
+- **🔒 Security and Validation**
+  - Added CSRF trusted origins for HTTPS access
+  - Fixed Django package dependencies and imports
+  - Comprehensive input validation and sanitization
+  - Secure command execution with proper sudo privileges
+  - Protection against common web security vulnerabilities
+
+### Fixed
+- **🐛 Critical Template Issues**
+  - Resolved Django `TemplateSyntaxError` from complex conditional expressions
+  - Fixed `bootstrap5` vs `django_bootstrap5` app name configuration
+  - Corrected package dependencies in requirements.txt
+  - Fixed CSRF verification failures on form submissions
+  - Eliminated template parsing errors across all nftables pages
+
+- **⚙️ Deployment and Configuration**
+  - Fixed package installation conflicts on remote server
+  - Resolved Django import errors and virtual environment issues
+  - Corrected service startup failures due to missing dependencies
+  - Fixed URL routing and view function imports
+
+### Technical Implementation
+- **Backend Architecture**
+  - Created `network.utils.create_nftables_rule()` for live rule application
+  - Added `network.utils.create_port_forward_rule()` for DNAT management
+  - Implemented `network.utils.parse_nftables_rules()` for rule parsing
+  - Enhanced views with proper POST request handling and form processing
+  - Database models for rule persistence with user tracking and timestamps
+
+- **Frontend Implementation**
+  - Django ModelForms with Bootstrap 5 styling and validation
+  - Responsive templates with proper error handling and user feedback
+  - Dynamic form fields with contextual help and examples
+  - Status indicators and progress feedback for rule operations
+
+### Deployment Success
+- Successfully tested and deployed to remote server (192.168.1.253:10443)
+- All nftables functionality verified working in production environment
+- Forms successfully create and apply rules to live system
+- Web interface fully accessible without errors
+
 ## [1.1.3] - 2025-08-27
 
 ### Fixed

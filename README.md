@@ -1,6 +1,6 @@
 # Router Manager
 
-**Version 1.1.3** - A comprehensive web-based router management system for RHEL 9 and Rocky Linux 9 distributions. This application provides an intuitive web interface for managing network configurations, firewall rules, VPN tunnels, and system monitoring.
+**Version 1.2.0** - A comprehensive web-based router management system for RHEL 9 and Rocky Linux 9 distributions. This application provides an intuitive web interface for managing network configurations, firewall rules, VPN tunnels, and system monitoring with fully functional nftables integration.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
@@ -8,9 +8,9 @@
 
 ## 🚀 Features
 
-### ✅ Current Features (v1.1.3)
+### ✅ Current Features (v1.2.0)
 - **🖥️ Modern Web Interface**: Responsive Django-based UI with Bootstrap 5 styling
-- **🛡️ Firewall Management**: Complete nftables integration with port forwarding and rule management
+- **🛡️ Firewall Management**: **NEW** Complete nftables integration with port forwarding and rule management
 - **🌐 Network Configuration**: Advanced IP forwarding, NAT, and network interface management
 - **🔐 IPSec VPN Tunnels**: Full StrongSwan integration for site-to-site and client VPN
 - **📊 System Monitoring**: Real-time CPU, memory, disk usage with dashboard graphs
@@ -21,6 +21,15 @@
 - **🌐 Real Network Display**: Fixed interface detection and network status display
 - **📋 Working Routing Table**: Full IPv4/IPv6 routing table display with proper parsing
 - **⚡ Functional UI**: All network pages now work without template syntax errors
+
+### 🆕 What's New in v1.2.0
+- **🔥 Fully Functional nftables Management**: Create, edit, and manage firewall rules through web interface
+- **🔄 Live Rule Application**: Rules are applied to nftables configuration in real-time
+- **📊 Enhanced Rule Display**: Clean, organized view of both database-saved and active system rules
+- **🚀 Port Forwarding**: Complete DNAT configuration with web forms and validation
+- **🛠️ Form Validation**: Comprehensive IP address, port, and CIDR validation
+- **✅ Database Persistence**: Rules saved for future management and audit trails
+- **🎨 Improved UI**: Better rule visualization with status indicators and protocol badges
 
 ### 🎯 Supported Use Cases
 - **Home Lab Router**: Convert Linux server into feature-rich router

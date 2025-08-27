@@ -228,7 +228,7 @@ def get_network_interfaces():
     """Get detailed network interface information"""
     try:
         # Get interface list
-        result = run_command(["ip", "link", "show"])
+        result = run_command(["/usr/bin/sudo", "/sbin/ip", "link", "show"])
         if not result["success"]:
             return {}
 
@@ -261,8 +261,8 @@ def get_network_interfaces():
             # Handle container-style interface names like eth0@if35
             # For ip addr command, we need to use just the base name (eth0)
             query_name = interface_name.split('@')[0] if '@' in interface_name else interface_name
-            
-            result = run_command(["ip", "addr", "show", query_name])
+
+            result = run_command(["/usr/bin/sudo", "/sbin/ip", "addr", "show", query_name])
             if result["success"]:
                 for line in result["stdout"].split("\n"):
                     if "inet " in line and not line.strip().startswith("inet 127."):
@@ -290,7 +290,7 @@ def get_routing_table():
     """Get current routing table"""
     try:
         # Get IPv4 routes
-        result = run_command(["ip", "route", "show"])
+        result = run_command(["/usr/bin/sudo", "/sbin/ip", "route", "show"])
         ipv4_routes = []
 
         if result["success"]:
@@ -299,7 +299,7 @@ def get_routing_table():
                     ipv4_routes.append(line.strip())
 
         # Get IPv6 routes
-        result = run_command(["ip", "-6", "route", "show"])
+        result = run_command(["/usr/bin/sudo", "/sbin/ip", "-6", "route", "show"])
         ipv6_routes = []
 
         if result["success"]:

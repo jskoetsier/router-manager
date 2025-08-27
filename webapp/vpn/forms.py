@@ -4,7 +4,27 @@ VPN management forms
 from django import forms
 from django.core.validators import RegexValidator
 from .models import VPNTunnel
-from .utils import validate_ip_address, validate_subnet, generate_psk
+# Comment out missing imports for now
+# from .utils import validate_ip_address, validate_subnet, generate_psk
+import re
+import secrets
+import string
+import ipaddress
+
+
+def validate_subnet(subnet):
+    """Validate subnet in CIDR notation"""
+    try:
+        ipaddress.ip_network(subnet, strict=False)
+        return True
+    except ValueError:
+        return False
+
+
+def generate_psk(length=32):
+    """Generate a random pre-shared key"""
+    alphabet = string.ascii_letters + string.digits
+    return ''.join(secrets.choice(alphabet) for _ in range(length))
 
 
 class VPNTunnelForm(forms.ModelForm):

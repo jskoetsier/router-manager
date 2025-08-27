@@ -39,9 +39,9 @@
                         <div class="text-xs font-weight-bold text-success text-uppercase mb-1">IP Forwarding</div>
                         <div class="h5 mb-0 font-weight-bold text-gray-800">
                             {% if forwarding_status.ipv4_forwarding %}
-                                <span class="badge bg-success">Enabled</span>
+                            <span class="badge bg-success">Enabled</span>
                             {% else %}
-                                <span class="badge bg-danger">Disabled</span>
+                            <span class="badge bg-danger">Disabled</span>
                             {% endif %}
                         </div>
                     </div>
@@ -61,9 +61,9 @@
                         <div class="text-xs font-weight-bold text-info text-uppercase mb-1">NAT Status</div>
                         <div class="h5 mb-0 font-weight-bold text-gray-800">
                             {% if nat_status.nat_enabled %}
-                                <span class="badge bg-success">Enabled</span>
+                            <span class="badge bg-success">Enabled</span>
                             {% else %}
-                                <span class="badge bg-warning">Disabled</span>
+                            <span class="badge bg-warning">Disabled</span>
                             {% endif %}
                         </div>
                     </div>
@@ -83,9 +83,9 @@
                         <div class="text-xs font-weight-bold text-warning text-uppercase mb-1">Active Interfaces</div>
                         <div class="h5 mb-0 font-weight-bold text-gray-800">
                             {% if interfaces %}
-                                {{ interfaces|length }}
+                            {{ interfaces|length }}
                             {% else %}
-                                0
+                            0
                             {% endif %}
                         </div>
                     </div>
@@ -171,8 +171,8 @@
                     <div class="row">
                         <div class="col-6">
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" disabled 
-                                       {% if forwarding_status.ipv4_forwarding %}checked{% endif %}>
+                                <input class="form-check-input" type="checkbox" disabled {% if
+                                    forwarding_status.ipv4_forwarding %}checked{% endif %}>
                                 <label class="form-check-label">
                                     IPv4 Forwarding
                                 </label>
@@ -180,8 +180,8 @@
                         </div>
                         <div class="col-6">
                             <div class="form-check">
-                                <input class="form-check-input" type="checkbox" disabled 
-                                       {% if forwarding_status.ipv6_forwarding %}checked{% endif %}>
+                                <input class="form-check-input" type="checkbox" disabled {% if
+                                    forwarding_status.ipv6_forwarding %}checked{% endif %}>
                                 <label class="form-check-label">
                                     IPv6 Forwarding
                                 </label>
@@ -227,7 +227,8 @@
                             <div class="card-body text-center">
                                 <h6><i class="fas fa-ethernet text-primary"></i> Network Interfaces</h6>
                                 <p class="text-muted small">Configure network interface settings</p>
-                                <a href="{% url 'network:interfaces_list' %}" class="btn btn-primary btn-sm">Manage Interfaces</a>
+                                <a href="{% url 'network:interfaces_list' %}" class="btn btn-primary btn-sm">Manage
+                                    Interfaces</a>
                             </div>
                         </div>
                     </div>
@@ -237,7 +238,8 @@
                             <div class="card-body text-center">
                                 <h6><i class="fas fa-route text-success"></i> Routing Table</h6>
                                 <p class="text-muted small">View and manage network routes</p>
-                                <a href="{% url 'network:routing_table' %}" class="btn btn-success btn-sm">View Routes</a>
+                                <a href="{% url 'network:routing_table' %}" class="btn btn-success btn-sm">View
+                                    Routes</a>
                             </div>
                         </div>
                     </div>
@@ -247,7 +249,8 @@
                             <div class="card-body text-center">
                                 <h6><i class="fas fa-cog text-info"></i> System Settings</h6>
                                 <p class="text-muted small">IP forwarding, NAT, and more</p>
-                                <a href="{% url 'network:system_settings' %}" class="btn btn-info btn-sm">System Settings</a>
+                                <a href="{% url 'network:system_settings' %}" class="btn btn-info btn-sm">System
+                                    Settings</a>
                             </div>
                         </div>
                     </div>
@@ -261,7 +264,9 @@
     <div class="col-12">
         <div class="alert alert-info">
             <h6><i class="fas fa-info-circle"></i> Network Management</h6>
-            <p class="mb-0">Configure your network interfaces, routing tables, and system-level network settings. Use the "System Settings" section to enable IP forwarding and NAT configuration. Changes to network configuration may require a system restart to take effect.</p>
+            <p class="mb-0">Configure your network interfaces, routing tables, and system-level network settings. Use
+                the "System Settings" section to enable IP forwarding and NAT configuration. Changes to network
+                configuration may require a system restart to take effect.</p>
         </div>
     </div>
 </div>

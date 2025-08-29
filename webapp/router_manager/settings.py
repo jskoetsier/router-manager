@@ -47,6 +47,7 @@ LOCAL_APPS = [
     'network',
     'vpn',
     'monitoring',
+    'nginx_mgr',
 ]
 
 INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
@@ -222,6 +223,22 @@ ROUTER_MANAGER = {
     'VPN_CERTS_PATH': '/etc/strongswan/certs',
     'BACKUP_PATH': '/opt/router-manager/backups',
 }
+
+# Nginx Manager specific settings
+NGINX_CONFIG_DIR = config('NGINX_CONFIG_DIR', default='/etc/nginx/sites-available')
+NGINX_ENABLED_DIR = config('NGINX_ENABLED_DIR', default='/etc/nginx/sites-enabled')
+NGINX_BINARY = config('NGINX_BINARY', default='/usr/sbin/nginx')
+SYSTEMCTL_BINARY = config('SYSTEMCTL_BINARY', default='/usr/bin/systemctl')
+
+# Certbot/Let's Encrypt settings
+CERTBOT_BINARY = config('CERTBOT_BINARY', default='/usr/bin/certbot')
+CERTBOT_WEBROOT_PATH = config('CERTBOT_WEBROOT_PATH', default='/var/www/certbot')
+LETSENCRYPT_DIR = config('LETSENCRYPT_DIR', default='/etc/letsencrypt')
+LETSENCRYPT_EMAIL = config('LETSENCRYPT_EMAIL', default='admin@localhost')
+
+# Docker/Container settings (if running in containers)
+NGINX_CONTAINER_NAME = config('NGINX_CONTAINER_NAME', default='nginx-proxy')
+DOCKER_COMPOSE_FILE = config('DOCKER_COMPOSE_FILE', default='docker-compose.yml')
 
 # Network interfaces to monitor (can be configured via UI)
 NETWORK_INTERFACES = config('NETWORK_INTERFACES', default='eth0,eth1', cast=lambda x: [i.strip() for i in x.split(',')])

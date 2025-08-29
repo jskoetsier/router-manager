@@ -1,0 +1,115 @@
+version: '3.8'
+
+services:
+  nginx-proxy:
+    image: nginx:alpine
+    container_name: router-manager-nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      # Nginx configuration
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/sites-available:/etc/nginx/sites-available:ro
+      - ./nginx/sites-enabled:/etc/nginx/sites-enabled:ro
+      
+      # SSL certificates from Let's Encrypt
+      - ./nginx/ssl/certbot:/etc/letsencrypt:ro
+      - ./nginx/ssl/dhparam:/etc/ssl/certs/dhparam.pem:ro
+      
+      # Webroot for Let's Encrypt challenges
+      - ./nginx/certbot-webroot:/var/www/certbot
+      
+      # Logs
+      - ./nginx/logs:/var/log/nginx
+    depends_on:
+      - certbot
+    networks:
+      - router-manager-net
+
+  certbot:
+    image: certbot/certbot:latest
+    container_name: router-manager-certbot
+    restart: "no"
+    volumes:
+      # SSL certificates storage
+      - ./nginx/ssl/certbot:/etc/letsencrypt
+      - ./nginx/ssl/certbot-lib:/var/lib/letsencrypt
+      
+      # Webroot for challenges
+      - ./nginx/certbot-webroot:/var/www/certbot
+      
+      # Logs
+      - ./nginx/logs/certbot:/var/log/letsencrypt
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+    networks:
+      - router-manager-net
+
+  # Router Manager Web Application
+  router-manager:
+    build: 
+      context: ./webapp
+      dockerfile: ../docker/Dockerfile
+    container_name: router-manager-app
+    restart: unless-stopped
+    environment:
+      - DEBUG=False
+      - ALLOWED_HOSTS=*
+      - DATABASE_URL=postgresql://routermgr:routermgr123@postgres:5432/routermanager
+      - REDIS_URL=redis://redis:6379/1
+      - NGINX_CONFIG_DIR=/nginx-configs/sites-available
+      - NGINX_ENABLED_DIR=/nginx-configs/sites-enabled
+      - CERTBOT_WEBROOT_PATH=/var/www/certbot
+      - LETSENCRYPT_DIR=/etc/letsencrypt
+      - LETSENCRYPT_EMAIL=admin@localhost
+    volumes:
+      # Share nginx configuration directories with the app
+      - ./nginx/sites-available:/nginx-configs/sites-available
+      - ./nginx/sites-enabled:/nginx-configs/sites-enabled
+      
+      # Share certbot directories for certificate management
+      - ./nginx/ssl/certbot:/etc/letsencrypt
+      - ./nginx/certbot-webroot:/var/www/certbot
+      
+      # Application data
+      - ./data/media:/app/media
+      - ./data/staticfiles:/app/staticfiles
+      - ./data/logs:/var/log/router-manager
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - router-manager-net
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: router-manager-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: routermanager
+      POSTGRES_USER: routermgr
+      POSTGRES_PASSWORD: routermgr123
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./data/postgres-backup:/backup
+    networks:
+      - router-manager-net
+
+  redis:
+    image: redis:7-alpine
+    container_name: router-manager-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    volumes:
+      - redis_data:/data
+    networks:
+      - router-manager-net
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  router-manager-net:
+    driver: bridge

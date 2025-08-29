@@ -17,6 +17,7 @@ urlpatterns = [
     path("network/", include("network.urls")),
     path("vpn/", include("vpn.urls")),
     path("monitoring/", include("monitoring.urls")),
+    path("nginx/", include("nginx_mgr.urls")),
 ]
 
 # Add media files serving in development

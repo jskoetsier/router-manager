@@ -1,28 +1,642 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
+{% load static %}
 
-{% block title %}System Metrics - Router Manager{% endblock %}
+{% block title %}System Metrics - Advanced Analytics{% endblock %}
+
+{% block extra_css %}
+<style>
+.metrics-controls {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+
+.chart-container {
+    background: white;
+    border-radius: 10px;
+    padding: 25px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+
+.stats-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 10px;
+    padding: 20px;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.stat-value {
+    font-size: 2em;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.stat-label {
+    font-size: 0.9em;
+    opacity: 0.9;
+}
+
+.drill-down-button {
+    background: rgba(255,255,255,0.2);
+    border: 1px solid rgba(255,255,255,0.3);
+    color: white;
+    margin-top: 10px;
+}
+
+.drill-down-button:hover {
+    background: rgba(255,255,255,0.3);
+    color: white;
+}
+
+.source-item {
+    padding: 10px 15px;
+    margin-bottom: 8px;
+    background: #f8f9fa;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.source-item:hover {
+    background: #e9ecef;
+}
+
+.source-item.active {
+    background: #007bff;
+    color: white;
+}
+
+.chart-loading {
+    display: none;
+    text-align: center;
+    padding: 50px;
+}
+
+.performance-indicator {
+    display: inline-block;
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    margin-right: 8px;
+}
+
+.performance-indicator.excellent { background: #28a745; }
+.performance-indicator.good { background: #28a745; }
+.performance-indicator.warning { background: #ffc107; }
+.performance-indicator.critical { background: #dc3545; }
+
+.time-selector {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.time-btn {
+    padding: 8px 16px;
+    border: 1px solid #dee2e6;
+    background: white;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.time-btn.active {
+    background: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+.drill-down-panel {
+    display: none;
+    margin-top: 20px;
+    padding: 20px;
+    background: #f8f9fa;
+    border-radius: 8px;
+}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/date-fns@2.29.3/index.min.js"></script>
+{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-12">
-        <h1 class="mb-4">
-            <i class="fas fa-chart-area"></i> System Metrics
-        </h1>
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="fas fa-chart-line"></i> System Metrics - Advanced Analytics</h1>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-secondary btn-sm" onclick="exportChart()">
+                <i class="fas fa-download"></i> Export Chart
+            </button>
+            <button class="btn btn-outline-primary btn-sm" onclick="refreshData()">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+        </div>
     </div>
-</div>
 
-<div class="row">
-    <div class="col-12">
-        <div class="card shadow">
-            <div class="card-header py-3">
-                <h6 class="m-0 font-weight-bold text-primary">Performance Metrics</h6>
+    <!-- Controls Panel -->
+    <div class="metrics-controls">
+        <form method="get" class="row g-3" id="metricsForm">
+            <div class="col-md-3">
+                <label for="metric_type" class="form-label">Metric Type</label>
+                <select name="type" id="metric_type" class="form-select" onchange="updateAvailableSources()">
+                    {% for value, label in available_metrics %}
+                        <option value="{{ value }}" {% if value == metric_type %}selected{% endif %}>
+                            {{ label }}
+                        </option>
+                    {% endfor %}
+                </select>
             </div>
-            <div class="card-body">
-                <div class="alert alert-info">
-                    <i class="fas fa-info-circle"></i> System metrics monitoring will be implemented in future versions.
+            <div class="col-md-3">
+                <label for="source" class="form-label">Source (Optional)</label>
+                <select name="source" id="source" class="form-select">
+                    <option value="">All Sources</option>
+                    {% for src in available_sources %}
+                        <option value="{{ src }}" {% if src == source %}selected{% endif %}>
+                            {{ src }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label for="hours" class="form-label">Time Range</label>
+                <select name="hours" id="hours" class="form-select">
+                    <option value="1" {% if hours == 1 %}selected{% endif %}>1 Hour</option>
+                    <option value="6" {% if hours == 6 %}selected{% endif %}>6 Hours</option>
+                    <option value="24" {% if hours == 24 %}selected{% endif %}>24 Hours</option>
+                    <option value="168" {% if hours == 168 %}selected{% endif %}>1 Week</option>
+                    <option value="720" {% if hours == 720 %}selected{% endif %}>1 Month</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">&nbsp;</label>
+                <div>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="fas fa-search"></i> Update Chart
+                    </button>
                 </div>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label">&nbsp;</label>
+                <div>
+                    <button type="button" class="btn btn-outline-info" onclick="toggleDrillDown()">
+                        <i class="fas fa-microscope"></i> Drill Down
+                    </button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Statistics Row -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stats-card">
+                <div class="stat-value">{{ latest_metric.value|floatformat:2|default:"--" }}</div>
+                <div class="stat-label">Current Value</div>
+                {% if latest_metric.unit %}
+                    <small>({{ latest_metric.unit }})</small>
+                {% endif %}
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <div class="stat-value">{{ stats.avg|floatformat:2|default:"--" }}</div>
+                <div class="stat-label">Average</div>
+                <button class="btn drill-down-button btn-sm" onclick="showDrillDown('avg')">
+                    View Trend
+                </button>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <div class="stat-value">{{ stats.min|floatformat:2|default:"--" }}</div>
+                <div class="stat-label">Minimum</div>
+                <button class="btn drill-down-button btn-sm" onclick="showDrillDown('min')">
+                    When?
+                </button>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stats-card">
+                <div class="stat-value">{{ stats.max|floatformat:2|default:"--" }}</div>
+                <div class="stat-label">Maximum</div>
+                <button class="btn drill-down-button btn-sm" onclick="showDrillDown('max')">
+                    When?
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Chart -->
+    <div class="row">
+        <div class="col-md-9">
+            <div class="chart-container">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5>
+                        <span class="performance-indicator {{ metric_type|default:'excellent' }}"></span>
+                        {{ metric_type|title }} Usage - {{ source|default:"All Sources" }}
+                    </h5>
+                    <div class="time-selector">
+                        <div class="time-btn" data-minutes="15">15m</div>
+                        <div class="time-btn active" data-minutes="60">1h</div>
+                        <div class="time-btn" data-minutes="360">6h</div>
+                        <div class="time-btn" data-minutes="1440">24h</div>
+                    </div>
+                </div>
+                <div class="chart-loading">
+                    <i class="fas fa-spinner fa-spin fa-2x"></i>
+                    <p>Loading chart data...</p>
+                </div>
+                <canvas id="metricsChart" width="400" height="200"></canvas>
+            </div>
+
+            <!-- Drill Down Panel -->
+            <div id="drillDownPanel" class="drill-down-panel">
+                <h6><i class="fas fa-microscope"></i> Detailed Analysis</h6>
+                <div class="row">
+                    <div class="col-md-6">
+                        <canvas id="drillDownChart1" width="200" height="100"></canvas>
+                    </div>
+                    <div class="col-md-6">
+                        <canvas id="drillDownChart2" width="200" height="100"></canvas>
+                    </div>
+                </div>
+                <div class="mt-3">
+                    <h6>Performance Insights</h6>
+                    <div id="insightsContainer"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sources and Controls -->
+        <div class="col-md-3">
+            <div class="chart-container">
+                <h6><i class="fas fa-list"></i> Available Sources</h6>
+                <div id="sourcesList">
+                    {% for src in available_sources %}
+                        <div class="source-item {% if src == source %}active{% endif %}" 
+                             onclick="selectSource('{{ src }}')">
+                            <strong>{{ src|default:"System" }}</strong>
+                            <br>
+                            <small class="text-muted">Click to filter</small>
+                        </div>
+                    {% empty %}
+                        <p class="text-muted">No sources available for this metric</p>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="chart-container">
+                <h6><i class="fas fa-info-circle"></i> Metric Information</h6>
+                <div class="metric-info">
+                    <p><strong>Type:</strong> {{ metric_type|title }}</p>
+                    <p><strong>Source:</strong> {{ source|default:"All" }}</p>
+                    <p><strong>Interval:</strong> {{ interval_minutes }} minutes</p>
+                    {% if latest_metric %}
+                        <p><strong>Last Update:</strong> {{ latest_metric.timestamp|timesince }} ago</p>
+                    {% endif %}
+                </div>
+                
+                <hr>
+                
+                <h6><i class="fas fa-bell"></i> Quick Alerts</h6>
+                <form method="post" action="{% url 'monitoring:alert_create' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="metric_type" value="{{ metric_type }}">
+                    <input type="hidden" name="source" value="{{ source }}">
+                    
+                    <div class="mb-3">
+                        <label class="form-label">Alert when above:</label>
+                        <input type="number" class="form-control form-control-sm" 
+                               name="threshold_value" step="0.1" placeholder="e.g., 80">
+                    </div>
+                    
+                    <div class="mb-3">
+                        <select name="severity" class="form-select form-select-sm">
+                            <option value="warning">Warning</option>
+                            <option value="error">Error</option>
+                            <option value="critical">Critical</option>
+                        </select>
+                    </div>
+                    
+                    <button type="submit" class="btn btn-warning btn-sm w-100">
+                        <i class="fas fa-plus"></i> Create Alert
+                    </button>
+                </form>
             </div>
         </div>
     </div>
 </div>
+
+<script>
+let metricsChart;
+let drillDownChart1, drillDownChart2;
+let currentData = {{ chart_data|safe }};
+
+document.addEventListener('DOMContentLoaded', function() {
+    initializeChart();
+    setupTimeButtons();
+    setupAutoRefresh();
+});
+
+function initializeChart() {
+    const ctx = document.getElementById('metricsChart').getContext('2d');
+    
+    const chartData = currentData.map(item => ({
+        x: new Date(item.timestamp),
+        y: item.value
+    }));
+
+    metricsChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            datasets: [{
+                label: '{{ metric_type|title }}',
+                data: chartData,
+                borderColor: getMetricColor('{{ metric_type }}'),
+                backgroundColor: getMetricColor('{{ metric_type }}', 0.1),
+                tension: 0.4,
+                pointRadius: 3,
+                pointHoverRadius: 6,
+                fill: true
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    type: 'time',
+                    time: {
+                        displayFormats: {
+                            hour: 'HH:mm',
+                            day: 'MMM dd'
+                        }
+                    }
+                },
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: '{{ metric_type|title }} ({% if latest_metric.unit %}{{ latest_metric.unit }}{% endif %})'
+                    }
+                }
+            },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        afterLabel: function(context) {
+                            return generateInsight(context.parsed.y, '{{ metric_type }}');
+                        }
+                    }
+                },
+                legend: {
+                    display: true,
+                    position: 'top'
+                }
+            },
+            interaction: {
+                intersect: false,
+                mode: 'index'
+            },
+            onHover: function(event, activeElements) {
+                event.native.target.style.cursor = activeElements.length > 0 ? 'pointer' : 'default';
+            },
+            onClick: function(event, activeElements) {
+                if (activeElements.length > 0) {
+                    const dataIndex = activeElements[0].index;
+                    showPointDetails(dataIndex);
+                }
+            }
+        }
+    });
+}
+
+function getMetricColor(metricType, alpha = 1) {
+    const colors = {
+        'cpu': `rgba(102, 126, 234, ${alpha})`,
+        'memory': `rgba(245, 87, 108, ${alpha})`,
+        'disk': `rgba(79, 172, 254, ${alpha})`,
+        'network_rx_bytes': `rgba(67, 233, 123, ${alpha})`,
+        'network_tx_bytes': `rgba(253, 150, 68, ${alpha})`,
+        'temperature': `rgba(255, 99, 132, ${alpha})`,
+        'load_1min': `rgba(54, 162, 235, ${alpha})`
+    };
+    return colors[metricType] || `rgba(75, 192, 192, ${alpha})`;
+}
+
+function setupTimeButtons() {
+    document.querySelectorAll('.time-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            
+            const minutes = this.dataset.minutes;
+            loadRealtimeData(minutes);
+        });
+    });
+}
+
+function loadRealtimeData(minutes) {
+    showLoading(true);
+    
+    const metricType = document.getElementById('metric_type').value;
+    const source = document.getElementById('source').value;
+    
+    fetch(`{% url 'monitoring:api_metrics_data' %}?type=${metricType}&source=${source}&minutes=${minutes}`)
+        .then(response => response.json())
+        .then(data => {
+            updateChart(data.data);
+            showLoading(false);
+        })
+        .catch(error => {
+            console.error('Error loading data:', error);
+            showLoading(false);
+        });
+}
+
+function updateChart(data) {
+    const chartData = data.map(item => ({
+        x: new Date(item.timestamp),
+        y: item.value
+    }));
+    
+    metricsChart.data.datasets[0].data = chartData;
+    metricsChart.update();
+    
+    currentData = data;
+    updateInsights();
+}
+
+function showLoading(show) {
+    document.querySelector('.chart-loading').style.display = show ? 'block' : 'none';
+    document.getElementById('metricsChart').style.display = show ? 'none' : 'block';
+}
+
+function updateAvailableSources() {
+    const metricType = document.getElementById('metric_type').value;
+    
+    // Make AJAX request to get sources for this metric type
+    fetch(`/monitoring/api/sources/?metric_type=${metricType}`)
+        .then(response => response.json())
+        .then(data => {
+            const sourceSelect = document.getElementById('source');
+            sourceSelect.innerHTML = '<option value="">All Sources</option>';
+            
+            data.sources.forEach(source => {
+                const option = document.createElement('option');
+                option.value = source;
+                option.textContent = source;
+                sourceSelect.appendChild(option);
+            });
+        })
+        .catch(error => console.error('Error loading sources:', error));
+}
+
+function selectSource(source) {
+    document.getElementById('source').value = source;
+    document.getElementById('metricsForm').submit();
+}
+
+function toggleDrillDown() {
+    const panel = document.getElementById('drillDownPanel');
+    const isVisible = panel.style.display === 'block';
+    
+    if (!isVisible) {
+        panel.style.display = 'block';
+        initializeDrillDownCharts();
+    } else {
+        panel.style.display = 'none';
+    }
+}
+
+function initializeDrillDownCharts() {
+    // Initialize drill-down charts for detailed analysis
+    const ctx1 = document.getElementById('drillDownChart1').getContext('2d');
+    const ctx2 = document.getElementById('drillDownChart2').getContext('2d');
+    
+    // Chart 1: Moving average
+    drillDownChart1 = new Chart(ctx1, {
+        type: 'line',
+        data: {
+            labels: currentData.map(d => new Date(d.timestamp).toLocaleTimeString()),
+            datasets: [{
+                label: 'Moving Average',
+                data: calculateMovingAverage(currentData.map(d => d.value), 5),
+                borderColor: 'rgba(255, 159, 64, 1)',
+                backgroundColor: 'rgba(255, 159, 64, 0.1)'
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+    
+    // Chart 2: Rate of change
+    drillDownChart2 = new Chart(ctx2, {
+        type: 'bar',
+        data: {
+            labels: currentData.slice(1).map(d => new Date(d.timestamp).toLocaleTimeString()),
+            datasets: [{
+                label: 'Rate of Change',
+                data: calculateRateOfChange(currentData.map(d => d.value)),
+                backgroundColor: 'rgba(75, 192, 192, 0.7)'
+            }]
+        },
+        options: {
+            responsive: true,
+            scales: {
+                y: {
+                    beginAtZero: true
+                }
+            }
+        }
+    });
+}
+
+function calculateMovingAverage(data, window) {
+    const result = [];
+    for (let i = window - 1; i < data.length; i++) {
+        const sum = data.slice(i - window + 1, i + 1).reduce((a, b) => a + b, 0);
+        result.push(sum / window);
+    }
+    return result;
+}
+
+function calculateRateOfChange(data) {
+    const result = [];
+    for (let i = 1; i < data.length; i++) {
+        result.push(data[i] - data[i-1]);
+    }
+    return result;
+}
+
+function generateInsight(value, metricType) {
+    const insights = {
+        'cpu': value > 80 ? 'High CPU usage' : value > 50 ? 'Moderate CPU usage' : 'Normal CPU usage',
+        'memory': value > 85 ? 'High memory usage' : value > 70 ? 'Moderate memory usage' : 'Normal memory usage',
+        'disk': value > 90 ? 'Disk almost full' : value > 70 ? 'Disk usage high' : 'Disk usage normal'
+    };
+    return insights[metricType] || 'Value: ' + value;
+}
+
+function updateInsights() {
+    if (currentData.length === 0) return;
+    
+    const values = currentData.map(d => d.value);
+    const avg = values.reduce((a, b) => a + b, 0) / values.length;
+    const trend = values[values.length - 1] > values[0] ? 'increasing' : 'decreasing';
+    
+    const insightsHtml = `
+        <div class="alert alert-info">
+            <strong>Trend Analysis:</strong> The metric is ${trend} with an average of ${avg.toFixed(2)}.
+        </div>
+    `;
+    
+    const container = document.getElementById('insightsContainer');
+    if (container) {
+        container.innerHTML = insightsHtml;
+    }
+}
+
+function showPointDetails(dataIndex) {
+    const point = currentData[dataIndex];
+    alert(`Timestamp: ${new Date(point.timestamp).toLocaleString()}\nValue: ${point.value}\nSource: ${point.source || 'System'}`);
+}
+
+function exportChart() {
+    const link = document.createElement('a');
+    link.download = `metrics_${document.getElementById('metric_type').value}_${new Date().toISOString().split('T')[0]}.png`;
+    link.href = metricsChart.toBase64Image();
+    link.click();
+}
+
+function refreshData() {
+    const minutes = document.querySelector('.time-btn.active').dataset.minutes;
+    loadRealtimeData(minutes);
+}
+
+function setupAutoRefresh() {
+    // Auto-refresh every 30 seconds if viewing recent data
+    setInterval(() => {
+        const activeMinutes = parseInt(document.querySelector('.time-btn.active').dataset.minutes);
+        if (activeMinutes <= 360) { // Only auto-refresh for 6 hours or less
+            refreshData();
+        }
+    }, 30000);
+}
+
+function showDrillDown(statType) {
+    toggleDrillDown();
+    // Could implement specific drill-down for min/max/avg here
+}
+</script>
 {% endblock %}

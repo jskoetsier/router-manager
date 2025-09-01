@@ -1,99 +1,468 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
+{% load static %}
 
-{% block title %}Monitoring - Router Manager{% endblock %}
+{% block title %}Enhanced Monitoring Dashboard{% endblock %}
+
+{% block extra_css %}
+<style>
+.metric-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 15px;
+    padding: 25px;
+    margin-bottom: 20px;
+    position: relative;
+    overflow: hidden;
+    transition: transform 0.2s;
+}
+
+.metric-card:hover {
+    transform: translateY(-5px);
+}
+
+.metric-card.cpu { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+.metric-card.memory { background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%); }
+.metric-card.disk { background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%); }
+.metric-card.network { background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%); }
+
+.metric-value {
+    font-size: 2.8em;
+    font-weight: bold;
+    margin-bottom: 5px;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+}
+
+.metric-label {
+    font-size: 1em;
+    opacity: 0.9;
+    margin-bottom: 10px;
+}
+
+.metric-trend {
+    font-size: 0.8em;
+    opacity: 0.8;
+}
+
+.chart-container {
+    background: white;
+    border-radius: 10px;
+    padding: 25px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+
+.alert-badge {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    background: rgba(255,255,255,0.2);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 15px;
+    font-size: 0.8em;
+}
+
+.service-item {
+    padding: 15px;
+    margin-bottom: 10px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border-left: 4px solid #28a745;
+}
+
+.service-item.failed {
+    border-left-color: #dc3545;
+}
+
+.service-item.stopped {
+    border-left-color: #ffc107;
+}
+
+.interface-card {
+    background: white;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 10px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.log-entry {
+    padding: 8px 12px;
+    margin-bottom: 5px;
+    border-radius: 4px;
+    font-family: monospace;
+    font-size: 0.85em;
+}
+
+.log-entry.ERROR { background-color: #f8d7da; color: #721c24; }
+.log-entry.WARNING { background-color: #fff3cd; color: #856404; }
+.log-entry.INFO { background-color: #d1ecf1; color: #0c5460; }
+
+.progress-circle {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 0.9em;
+}
+
+.realtime-indicator {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background: #28a745;
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.2); opacity: 0.7; }
+    100% { transform: scale(1); opacity: 1; }
+}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
 
 {% block content %}
-<div class="row">
-    <div class="col-12">
-        <h1 class="mb-4">
-            <i class="fas fa-chart-line"></i> System Monitoring
-        </h1>
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="fas fa-tachometer-alt"></i> Enhanced Monitoring Dashboard</h1>
+        <div class="d-flex gap-2">
+            <span class="realtime-indicator"></span>
+            <small class="text-muted">Live Data</small>
+            <form method="post" action="{% url 'monitoring:force_collection' %}" class="d-inline">
+                {% csrf_token %}
+                <button type="submit" class="btn btn-outline-primary btn-sm">
+                    <i class="fas fa-sync-alt"></i> Refresh Metrics
+                </button>
+            </form>
+        </div>
     </div>
-</div>
-
-<div class="row">
-    <div class="col-lg-8">
-        <div class="card shadow mb-4">
-            <div class="card-header py-3">
-                <h6 class="m-0 font-weight-bold text-primary">Monitoring Overview</h6>
+    
+    <!-- Main Metrics Row -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="metric-card cpu">
+                {% if latest_cpu %}
+                    <div class="metric-value">{{ latest_cpu.value|floatformat:1 }}%</div>
+                    <div class="metric-label">CPU Usage</div>
+                    <div class="metric-trend">
+                        <i class="fas fa-arrow-up"></i> System Load
+                    </div>
+                    {% if latest_cpu.value > 80 %}
+                        <div class="alert-badge">HIGH</div>
+                    {% endif %}
+                {% else %}
+                    <div class="metric-value">--</div>
+                    <div class="metric-label">CPU Usage</div>
+                    <div class="metric-trend">No data available</div>
+                {% endif %}
             </div>
-            <div class="card-body">
-                <p>Monitor system performance, network traffic, and service health.</p>
-
-                <div class="row">
-                    <div class="col-md-4 mb-3">
-                        <div class="card bg-light">
-                            <div class="card-body text-center">
-                                <h6><i class="fas fa-chart-area text-primary"></i> System Metrics</h6>
-                                <p class="text-muted small">CPU, Memory, Disk usage</p>
-                                <a href="{% url 'monitoring:metrics' %}" class="btn btn-primary btn-sm">View Metrics</a>
-                            </div>
-                        </div>
+        </div>
+        <div class="col-md-3">
+            <div class="metric-card memory">
+                {% if latest_memory %}
+                    <div class="metric-value">{{ latest_memory.value|floatformat:1 }}%</div>
+                    <div class="metric-label">Memory Usage</div>
+                    <div class="metric-trend">
+                        {% if latest_memory.metadata.available_mb %}
+                            {{ latest_memory.metadata.available_mb|floatformat:0 }}MB free
+                        {% endif %}
                     </div>
-
-                    <div class="col-md-4 mb-3">
-                        <div class="card bg-light">
-                            <div class="card-body text-center">
-                                <h6><i class="fas fa-bell text-warning"></i> Alerts</h6>
-                                <p class="text-muted small">System alerts and notifications</p>
-                                <a href="{% url 'monitoring:alerts_list' %}" class="btn btn-warning btn-sm">View Alerts</a>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="col-md-4 mb-3">
-                        <div class="card bg-light">
-                            <div class="card-body text-center">
-                                <h6><i class="fas fa-cogs text-success"></i> Services</h6>
-                                <p class="text-muted small">Service status monitoring</p>
-                                <a href="{% url 'monitoring:services_status' %}" class="btn btn-success btn-sm">View Services</a>
-                            </div>
-                        </div>
-                    </div>
+                    {% if latest_memory.value > 85 %}
+                        <div class="alert-badge">HIGH</div>
+                    {% endif %}
+                {% else %}
+                    <div class="metric-value">--</div>
+                    <div class="metric-label">Memory Usage</div>
+                    <div class="metric-trend">No data available</div>
+                {% endif %}
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="metric-card disk">
+                <div class="metric-value">
+                    {% if disk_metrics %}
+                        {% for disk in disk_metrics %}
+                            {% if forloop.first %}{{ disk.latest_value|floatformat:1 }}%{% endif %}
+                        {% endfor %}
+                    {% else %}--{% endif %}
+                </div>
+                <div class="metric-label">Disk Usage</div>
+                <div class="metric-trend">
+                    {{ disk_metrics|length }} partition{{ disk_metrics|length|pluralize }}
+                </div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="metric-card network">
+                <div class="metric-value">
+                    {% if interfaces %}{{ interfaces.count }}{% else %}0{% endif %}
+                </div>
+                <div class="metric-label">Network Interfaces</div>
+                <div class="metric-trend">
+                    {{ interfaces|length }} active interface{{ interfaces|length|pluralize }}
                 </div>
             </div>
         </div>
     </div>
 
-    <div class="col-lg-4">
-        <div class="card shadow mb-4">
-            <div class="card-header py-3">
-                <h6 class="m-0 font-weight-bold text-primary">System Health</h6>
-            </div>
-            <div class="card-body">
-                <div class="d-flex align-items-center mb-3">
-                    <div class="me-3">
-                        <i class="fas fa-heartbeat fa-2x text-success"></i>
-                    </div>
-                    <div>
-                        <h6 class="mb-0">System Status</h6>
-                        <small class="text-success">Healthy</small>
+    <!-- Charts and Services Row -->
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <div class="chart-container">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5><i class="fas fa-chart-line"></i> Real-time Performance</h5>
+                    <div class="btn-group btn-group-sm" role="group">
+                        <button type="button" class="btn btn-outline-secondary active" data-metric="cpu">CPU</button>
+                        <button type="button" class="btn btn-outline-secondary" data-metric="memory">Memory</button>
+                        <button type="button" class="btn btn-outline-secondary" data-metric="network_rx_bytes">Network</button>
                     </div>
                 </div>
+                <canvas id="performanceChart" width="400" height="200"></canvas>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="chart-container">
+                <h5><i class="fas fa-server"></i> Service Status</h5>
+                <div class="service-list">
+                    {% for service in services %}
+                        <div class="service-item {% if service.status == 'failed' %}failed{% elif service.status == 'stopped' %}stopped{% endif %}">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <strong>{{ service.display_name|default:service.service_name }}</strong>
+                                    <br>
+                                    <small class="text-muted">
+                                        {% if service.status == 'running' %}
+                                            {% if service.uptime_seconds %}
+                                                Uptime: {% widthratio service.uptime_seconds 3600 1 %}h
+                                            {% endif %}
+                                        {% endif %}
+                                    </small>
+                                </div>
+                                <div class="text-end">
+                                    <span class="badge {% if service.status == 'running' %}bg-success{% elif service.status == 'failed' %}bg-danger{% else %}bg-warning{% endif %}">
+                                        {{ service.status|title }}
+                                    </span>
+                                    {% if service.status == 'running' and service.cpu_percent > 0 %}
+                                        <br><small class="text-muted">CPU: {{ service.cpu_percent|floatformat:1 }}%</small>
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    {% empty %}
+                        <p class="text-muted">No services monitored</p>
+                    {% endfor %}
+                </div>
+                <div class="text-center mt-3">
+                    <a href="{% url 'monitoring:services_status' %}" class="btn btn-outline-primary btn-sm">
+                        View All Services
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
 
-                <hr>
+    <!-- Active Alerts and Network Interfaces -->
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <div class="chart-container">
+                <h5><i class="fas fa-exclamation-triangle"></i> Active Alerts</h5>
+                {% if active_alerts %}
+                    {% for alert in active_alerts %}
+                        <div class="alert alert-{% if alert.alert.severity == 'critical' %}danger{% elif alert.alert.severity == 'error' %}warning{% else %}info{% endif %} alert-dismissible">
+                            <strong>{{ alert.alert.name }}</strong>
+                            <p class="mb-1">{{ alert.message }}</p>
+                            <small class="text-muted">
+                                {{ alert.triggered_at|timesince }} ago
+                                {% if alert.source %} • {{ alert.source }}{% endif %}
+                            </small>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <div class="alert alert-success">
+                        <i class="fas fa-check-circle"></i> No active alerts
+                    </div>
+                {% endif %}
+                <div class="text-center">
+                    <a href="{% url 'monitoring:alerts_list' %}" class="btn btn-outline-primary btn-sm">
+                        Manage Alerts
+                    </a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6">
+            <div class="chart-container">
+                <h5><i class="fas fa-network-wired"></i> Network Interfaces</h5>
+                {% for interface in interfaces %}
+                    <div class="interface-card">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <strong>{{ interface.display_name|default:interface.interface_name }}</strong>
+                                <br>
+                                <small class="text-muted">{{ interface.ip_address|default:"No IP" }}</small>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge {% if interface.is_active %}bg-success{% else %}bg-secondary{% endif %}">
+                                    {% if interface.is_active %}Active{% else %}Inactive{% endif %}
+                                </span>
+                                {% if interface.speed_mbps %}
+                                    <br><small class="text-muted">{{ interface.speed_mbps }}Mbps</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% empty %}
+                    <p class="text-muted">No network interfaces found</p>
+                {% endfor %}
+                <div class="text-center mt-3">
+                    <a href="{% url 'monitoring:network_interfaces' %}" class="btn btn-outline-primary btn-sm">
+                        View Network Details
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
 
-                <div class="small">
-                    <div class="d-flex justify-content-between mb-1">
-                        <span>Uptime:</span>
-                        <strong>2 days, 4 hours</strong>
-                    </div>
-                    <div class="d-flex justify-content-between">
-                        <span>Load Average:</span>
-                        <strong>0.45</strong>
-                    </div>
+    <!-- Recent System Logs -->
+    <div class="row">
+        <div class="col-12">
+            <div class="chart-container">
+                <h5><i class="fas fa-file-alt"></i> Recent System Logs</h5>
+                <div class="log-container" style="max-height: 300px; overflow-y: auto;">
+                    {% for log in recent_logs %}
+                        <div class="log-entry {{ log.level }}">
+                            <span class="text-muted">{{ log.timestamp|date:"H:i:s" }}</span>
+                            <span class="fw-bold">[{{ log.source|upper }}]</span>
+                            {{ log.message|truncatechars:100 }}
+                        </div>
+                    {% empty %}
+                        <p class="text-muted">No recent log entries</p>
+                    {% endfor %}
+                </div>
+                <div class="text-center mt-3">
+                    <a href="{% url 'monitoring:logs' %}" class="btn btn-outline-primary btn-sm">
+                        View All Logs
+                    </a>
                 </div>
             </div>
         </div>
     </div>
 </div>
 
-<div class="row">
-    <div class="col-12">
-        <div class="alert alert-info">
-            <h5><i class="fas fa-info-circle"></i> System Monitoring</h5>
-            <p class="mb-0">Monitor your system's performance and health. Set up alerts to be notified of potential issues before they become problems.</p>
-        </div>
-    </div>
-</div>
+<script>
+let performanceChart;
+let currentMetric = 'cpu';
+
+document.addEventListener('DOMContentLoaded', function() {
+    initializeChart();
+    setupMetricButtons();
+    startRealTimeUpdates();
+});
+
+function initializeChart() {
+    const ctx = document.getElementById('performanceChart').getContext('2d');
+    performanceChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'CPU Usage (%)',
+                data: [],
+                borderColor: 'rgb(75, 192, 192)',
+                backgroundColor: 'rgba(75, 192, 192, 0.1)',
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    max: 100
+                }
+            },
+            plugins: {
+                legend: {
+                    display: false
+                }
+            }
+        }
+    });
+    
+    loadMetricData(currentMetric);
+}
+
+function setupMetricButtons() {
+    document.querySelectorAll('[data-metric]').forEach(button => {
+        button.addEventListener('click', function() {
+            // Update active button
+            document.querySelectorAll('[data-metric]').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Load new metric data
+            currentMetric = this.dataset.metric;
+            loadMetricData(currentMetric);
+        });
+    });
+}
+
+function loadMetricData(metricType) {
+    fetch(`{% url 'monitoring:api_metrics_data' %}?type=${metricType}&minutes=60`)
+        .then(response => response.json())
+        .then(data => {
+            updateChart(data.data, metricType);
+        })
+        .catch(error => console.error('Error loading metric data:', error));
+}
+
+function updateChart(data, metricType) {
+    const labels = data.map(d => {
+        const date = new Date(d.timestamp);
+        return date.toLocaleTimeString();
+    });
+    
+    const values = data.map(d => d.value);
+    
+    performanceChart.data.labels = labels;
+    performanceChart.data.datasets[0].data = values;
+    performanceChart.data.datasets[0].label = metricType.toUpperCase() + ' Usage';
+    
+    // Update colors based on metric type
+    const colors = {
+        'cpu': 'rgb(102, 126, 234)',
+        'memory': 'rgb(245, 87, 108)', 
+        'network_rx_bytes': 'rgb(67, 233, 123)'
+    };
+    
+    const color = colors[metricType] || 'rgb(75, 192, 192)';
+    performanceChart.data.datasets[0].borderColor = color;
+    performanceChart.data.datasets[0].backgroundColor = color.replace('rgb', 'rgba').replace(')', ', 0.1)');
+    
+    performanceChart.update();
+}
+
+function startRealTimeUpdates() {
+    // Update every 30 seconds
+    setInterval(() => {
+        loadMetricData(currentMetric);
+        updateSystemStatus();
+    }, 30000);
+}
+
+function updateSystemStatus() {
+    fetch('{% url 'monitoring:api_system_status' %}')
+        .then(response => response.json())
+        .then(data => {
+            // Update metric cards if needed
+            console.log('System status updated:', data);
+        })
+        .catch(error => console.error('Error updating system status:', error));
+}
+</script>
 {% endblock %}

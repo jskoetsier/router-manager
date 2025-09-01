@@ -113,7 +113,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Integration with system nginx service for live configuration updates
   - Support for HTTP and HTTPS upstream servers with custom headers
 
-- **🔒 Automated SSL Certificate Management**  
+- **🔒 Automated SSL Certificate Management**
   - Integrated Let's Encrypt certificate automation via certbot
   - One-click SSL certificate generation for configured domains
   - Automatic certificate renewal setup with cron scheduling

@@ -1,0 +1,688 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Network Interfaces Monitoring{% endblock %}
+
+{% block extra_css %}
+<style>
+.interface-card {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+    border-left: 4px solid #28a745;
+    transition: transform 0.2s;
+}
+
+.interface-card:hover {
+    transform: translateY(-2px);
+}
+
+.interface-card.inactive {
+    border-left-color: #6c757d;
+    opacity: 0.7;
+}
+
+.interface-status {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.8em;
+    font-weight: 500;
+}
+
+.interface-status.active {
+    background: #d4edda;
+    color: #155724;
+}
+
+.interface-status.inactive {
+    background: #e2e3e5;
+    color: #383d41;
+}
+
+.traffic-meter {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.traffic-bar {
+    flex: 1;
+    height: 8px;
+    background: #e9ecef;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.traffic-fill {
+    height: 100%;
+    transition: width 0.3s ease;
+}
+
+.rx-fill {
+    background: linear-gradient(90deg, #28a745, #20c997);
+}
+
+.tx-fill {
+    background: linear-gradient(90deg, #007bff, #0056b3);
+}
+
+.interface-metrics {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.metric-item {
+    text-align: center;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 6px;
+}
+
+.metric-value {
+    font-size: 1.2em;
+    font-weight: bold;
+    color: #495057;
+}
+
+.metric-label {
+    font-size: 0.8em;
+    color: #6c757d;
+    margin-top: 5px;
+}
+
+.bandwidth-chart {
+    background: white;
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+
+.interface-actions {
+    display: flex;
+    gap: 10px;
+    margin-top: 15px;
+}
+
+.speed-indicator {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.7em;
+    font-weight: 500;
+}
+
+.speed-10mb { background: #ffeaa7; color: #2d3436; }
+.speed-100mb { background: #81ecec; color: #2d3436; }
+.speed-1gb { background: #74b9ff; color: white; }
+.speed-10gb { background: #a29bfe; color: white; }
+
+.packets-info {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 10px;
+    font-size: 0.85em;
+    color: #6c757d;
+}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="fas fa-network-wired"></i> Network Interfaces Monitoring</h1>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-primary btn-sm" onclick="refreshInterfaces()">
+                <i class="fas fa-sync-alt"></i> Refresh All
+            </button>
+            <button class="btn btn-outline-info btn-sm" onclick="showBandwidthChart()">
+                <i class="fas fa-chart-area"></i> Bandwidth Chart
+            </button>
+        </div>
+    </div>
+
+    <!-- Network Overview -->
+    <div class="row mb-4">
+        <div class="col-md-3">
+            <div class="stat-card bg-primary text-white">
+                <div class="stat-value">{{ interfaces.count }}</div>
+                <div class="stat-label">Total Interfaces</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card bg-success text-white">
+                <div class="stat-value">
+                    {{ interfaces|length|add:0 }}
+                    {% comment %} Count active interfaces in template {% endcomment %}
+                </div>
+                <div class="stat-label">Active Interfaces</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card bg-info text-white">
+                <div class="stat-value" id="totalThroughput">0</div>
+                <div class="stat-label">Total Throughput</div>
+            </div>
+        </div>
+        <div class="col-md-3">
+            <div class="stat-card bg-warning text-white">
+                <div class="stat-value" id="totalErrors">0</div>
+                <div class="stat-label">Total Errors</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Interfaces List -->
+        <div class="col-md-8">
+            {% for interface in interfaces %}
+                <div class="interface-card {% if not interface.is_active %}inactive{% endif %}">
+                    <div class="d-flex justify-content-between align-items-start">
+                        <div class="flex-grow-1">
+                            <div class="d-flex align-items-center mb-2">
+                                <h5 class="mb-0 me-3">
+                                    {{ interface.display_name|default:interface.interface_name }}
+                                </h5>
+                                <span class="interface-status {% if interface.is_active %}active{% else %}inactive{% endif %}">
+                                    {% if interface.is_active %}Active{% else %}Inactive{% endif %}
+                                </span>
+                                {% if interface.speed_mbps %}
+                                    <span class="speed-indicator {% if interface.speed_mbps >= 10000 %}speed-10gb{% elif interface.speed_mbps >= 1000 %}speed-1gb{% elif interface.speed_mbps >= 100 %}speed-100mb{% else %}speed-10mb{% endif %} ms-2">
+                                        {{ interface.speed_mbps }}Mbps
+                                    </span>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <p class="mb-1">
+                                        <strong>IP Address:</strong> 
+                                        {{ interface.ip_address|default:"Not assigned" }}
+                                    </p>
+                                    <p class="mb-1">
+                                        <strong>MAC Address:</strong> 
+                                        {{ interface.mac_address|default:"Unknown" }}
+                                    </p>
+                                    <p class="mb-1">
+                                        <strong>MTU:</strong> {{ interface.mtu }}
+                                    </p>
+                                </div>
+                                <div class="col-md-6">
+                                    {% if interface.duplex %}
+                                        <p class="mb-1">
+                                            <strong>Duplex:</strong> {{ interface.duplex }}
+                                        </p>
+                                    {% endif %}
+                                    <p class="mb-1">
+                                        <strong>Last Updated:</strong> 
+                                        {{ interface.last_updated|timesince }} ago
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            {% if interface.latest_rx or interface.latest_tx %}
+                                <div class="traffic-section">
+                                    <h6 class="mt-3 mb-2">Traffic Statistics</h6>
+                                    
+                                    {% if interface.latest_rx %}
+                                        <div class="traffic-meter">
+                                            <small style="width: 40px;">RX:</small>
+                                            <div class="traffic-bar">
+                                                <div class="traffic-fill rx-fill" 
+                                                     style="width: {{ interface.latest_rx.value|floatformat:0|default:0 }}%"
+                                                     data-value="{{ interface.latest_rx.value }}">
+                                                </div>
+                                            </div>
+                                            <small style="width: 80px;">{{ interface.latest_rx.value|filesizeformat }}</small>
+                                        </div>
+                                    {% endif %}
+                                    
+                                    {% if interface.latest_tx %}
+                                        <div class="traffic-meter">
+                                            <small style="width: 40px;">TX:</small>
+                                            <div class="traffic-bar">
+                                                <div class="traffic-fill tx-fill" 
+                                                     style="width: {{ interface.latest_tx.value|floatformat:0|default:0 }}%"
+                                                     data-value="{{ interface.latest_tx.value }}">
+                                                </div>
+                                            </div>
+                                            <small style="width: 80px;">{{ interface.latest_tx.value|filesizeformat }}</small>
+                                        </div>
+                                    {% endif %}
+                                    
+                                    <div class="packets-info">
+                                        {% if interface.latest_rx and interface.latest_rx.metadata.packets_recv %}
+                                            <span>RX Packets: {{ interface.latest_rx.metadata.packets_recv|floatformat:0 }}</span>
+                                        {% endif %}
+                                        {% if interface.latest_tx and interface.latest_tx.metadata.packets_sent %}
+                                            <span>TX Packets: {{ interface.latest_tx.metadata.packets_sent|floatformat:0 }}</span>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            {% endif %}
+                        </div>
+                        
+                        <div class="dropdown">
+                            <button class="btn btn-sm btn-outline-secondary dropdown-toggle" 
+                                    type="button" data-bs-toggle="dropdown">
+                                Actions
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li>
+                                    <a class="dropdown-item" 
+                                       href="#" onclick="showInterfaceDetails('{{ interface.interface_name }}')">
+                                        <i class="fas fa-info-circle"></i> Details
+                                    </a>
+                                </li>
+                                <li>
+                                    <a class="dropdown-item" 
+                                       href="#" onclick="showTrafficHistory('{{ interface.interface_name }}')">
+                                        <i class="fas fa-chart-line"></i> Traffic History
+                                    </a>
+                                </li>
+                                <li><hr class="dropdown-divider"></li>
+                                <li>
+                                    <a class="dropdown-item" 
+                                       href="#" onclick="toggleMonitoring('{{ interface.interface_name }}', {{ interface.monitor_enabled|yesno:'false,true' }})">
+                                        {% if interface.monitor_enabled %}
+                                            <i class="fas fa-pause"></i> Disable Monitoring
+                                        {% else %}
+                                            <i class="fas fa-play"></i> Enable Monitoring
+                                        {% endif %}
+                                    </a>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle"></i> No network interfaces found.
+                </div>
+            {% endfor %}
+        </div>
+
+        <!-- Bandwidth Chart -->
+        <div class="col-md-4">
+            <div class="bandwidth-chart">
+                <h5><i class="fas fa-tachometer-alt"></i> Real-time Bandwidth</h5>
+                <canvas id="bandwidthChart" width="400" height="250"></canvas>
+                <div class="mt-3">
+                    <div class="d-flex justify-content-between">
+                        <small class="text-success">
+                            <i class="fas fa-arrow-down"></i> Download
+                        </small>
+                        <small class="text-primary">
+                            <i class="fas fa-arrow-up"></i> Upload
+                        </small>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bandwidth-chart">
+                <h5><i class="fas fa-exclamation-triangle"></i> Interface Alerts</h5>
+                <div class="alert-suggestions">
+                    <p class="small text-muted mb-2">Suggested Monitoring Alerts:</p>
+                    {% for interface in interfaces %}
+                        {% if interface.is_active %}
+                            <div class="alert-suggestion">
+                                <div class="d-flex justify-content-between align-items-center mb-2">
+                                    <span class="small">{{ interface.interface_name }} High Usage</span>
+                                    <button class="btn btn-outline-primary btn-xs" 
+                                            onclick="createTrafficAlert('{{ interface.interface_name }}')">
+                                        Create Alert
+                                    </button>
+                                </div>
+                            </div>
+                        {% endif %}
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="bandwidth-chart">
+                <h5><i class="fas fa-list"></i> Interface Summary</h5>
+                <div class="interface-summary">
+                    {% for interface in interfaces %}
+                        <div class="d-flex justify-content-between align-items-center mb-2 p-2 bg-light rounded">
+                            <div>
+                                <strong>{{ interface.interface_name }}</strong>
+                                <br>
+                                <small class="text-muted">{{ interface.ip_address|default:"No IP" }}</small>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge {% if interface.is_active %}bg-success{% else %}bg-secondary{% endif %}">
+                                    {% if interface.is_active %}UP{% else %}DOWN{% endif %}
+                                </span>
+                                {% if interface.speed_mbps %}
+                                    <br><small class="text-muted">{{ interface.speed_mbps }}M</small>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Interface Details Modal -->
+<div class="modal fade" id="interfaceDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Interface Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div id="interfaceDetailsContent">
+                    <!-- Content loaded dynamically -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Traffic History Modal -->
+<div class="modal fade" id="trafficHistoryModal" tabindex="-1">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Traffic History</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <canvas id="trafficHistoryChart" width="800" height="400"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let bandwidthChart, trafficHistoryChart;
+
+document.addEventListener('DOMContentLoaded', function() {
+    initializeBandwidthChart();
+    setupRealTimeUpdates();
+});
+
+function initializeBandwidthChart() {
+    const ctx = document.getElementById('bandwidthChart').getContext('2d');
+    
+    bandwidthChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [{
+                label: 'Download (Mbps)',
+                data: [],
+                borderColor: '#28a745',
+                backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                tension: 0.4
+            }, {
+                label: 'Upload (Mbps)',
+                data: [],
+                borderColor: '#007bff',
+                backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    title: {
+                        display: true,
+                        text: 'Bandwidth (Mbps)'
+                    }
+                }
+            },
+            plugins: {
+                legend: {
+                    position: 'bottom'
+                }
+            }
+        }
+    });
+    
+    // Load initial data
+    loadBandwidthData();
+}
+
+function loadBandwidthData() {
+    // Simulate loading bandwidth data
+    fetch('{% url "monitoring:api_metrics_data" %}?type=network_rx_bytes&minutes=30')
+        .then(response => response.json())
+        .then(data => {
+            updateBandwidthChart(data.data);
+        })
+        .catch(error => console.error('Error loading bandwidth data:', error));
+}
+
+function updateBandwidthChart(data) {
+    const labels = data.map(d => {
+        const date = new Date(d.timestamp);
+        return date.toLocaleTimeString();
+    });
+    
+    // Convert bytes to Mbps (simplified calculation)
+    const downloadData = data.map(d => (d.value * 8) / (1024 * 1024));
+    const uploadData = downloadData.map(v => v * 0.3); // Simulate upload data
+    
+    bandwidthChart.data.labels = labels.slice(-20); // Last 20 points
+    bandwidthChart.data.datasets[0].data = downloadData.slice(-20);
+    bandwidthChart.data.datasets[1].data = uploadData.slice(-20);
+    
+    bandwidthChart.update();
+    
+    // Update summary statistics
+    const totalThroughput = downloadData[downloadData.length - 1] + uploadData[uploadData.length - 1];
+    document.getElementById('totalThroughput').textContent = totalThroughput.toFixed(1) + ' Mbps';
+}
+
+function showInterfaceDetails(interfaceName) {
+    const modal = new bootstrap.Modal(document.getElementById('interfaceDetailsModal'));
+    const content = document.getElementById('interfaceDetailsContent');
+    
+    content.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Loading interface details...</div>';
+    modal.show();
+    
+    // Simulate loading interface details
+    setTimeout(() => {
+        content.innerHTML = `
+            <div class="interface-details">
+                <h6>Interface: ${interfaceName}</h6>
+                <div class="row">
+                    <div class="col-md-6">
+                        <h6>Network Configuration</h6>
+                        <p><strong>Status:</strong> <span class="badge bg-success">Up</span></p>
+                        <p><strong>IP Address:</strong> 192.168.1.100</p>
+                        <p><strong>Netmask:</strong> 255.255.255.0</p>
+                        <p><strong>Gateway:</strong> 192.168.1.1</p>
+                        <p><strong>DNS:</strong> 8.8.8.8, 8.8.4.4</p>
+                    </div>
+                    <div class="col-md-6">
+                        <h6>Hardware Information</h6>
+                        <p><strong>MAC Address:</strong> 00:11:22:33:44:55</p>
+                        <p><strong>Speed:</strong> 1000 Mbps</p>
+                        <p><strong>Duplex:</strong> Full</p>
+                        <p><strong>Link Status:</strong> Connected</p>
+                        <p><strong>Driver:</strong> e1000e</p>
+                    </div>
+                </div>
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <h6>Traffic Statistics (Last 24h)</h6>
+                        <table class="table table-sm">
+                            <tr>
+                                <td>Bytes Received</td>
+                                <td>1.2 GB</td>
+                                <td>Packets Received</td>
+                                <td>847,392</td>
+                            </tr>
+                            <tr>
+                                <td>Bytes Sent</td>
+                                <td>456 MB</td>
+                                <td>Packets Sent</td>
+                                <td>234,156</td>
+                            </tr>
+                            <tr>
+                                <td>Errors In</td>
+                                <td>0</td>
+                                <td>Errors Out</td>
+                                <td>0</td>
+                            </tr>
+                            <tr>
+                                <td>Drops In</td>
+                                <td>0</td>
+                                <td>Drops Out</td>
+                                <td>0</td>
+                            </tr>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        `;
+    }, 1000);
+}
+
+function showTrafficHistory(interfaceName) {
+    const modal = new bootstrap.Modal(document.getElementById('trafficHistoryModal'));
+    modal.show();
+    
+    // Initialize traffic history chart
+    setTimeout(() => {
+        const ctx = document.getElementById('trafficHistoryChart').getContext('2d');
+        
+        trafficHistoryChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: Array.from({length: 24}, (_, i) => `${i}:00`),
+                datasets: [{
+                    label: 'RX (MB/h)',
+                    data: Array.from({length: 24}, () => Math.random() * 100),
+                    borderColor: '#28a745',
+                    backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                    fill: true
+                }, {
+                    label: 'TX (MB/h)',
+                    data: Array.from({length: 24}, () => Math.random() * 50),
+                    borderColor: '#007bff',
+                    backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Traffic (MB/hour)'
+                        }
+                    }
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: `Traffic History for ${interfaceName} (Last 24 Hours)`
+                    }
+                }
+            }
+        });
+    }, 100);
+}
+
+function toggleMonitoring(interfaceName, enable) {
+    const action = enable ? 'enable' : 'disable';
+    
+    if (!confirm(`Are you sure you want to ${action} monitoring for ${interfaceName}?`)) {
+        return;
+    }
+    
+    alert(`Monitoring ${action}d for ${interfaceName}.\n\nNote: Actual implementation would update the database.`);
+    
+    // Refresh the page to update status
+    setTimeout(() => {
+        window.location.reload();
+    }, 1000);
+}
+
+function createTrafficAlert(interfaceName) {
+    // Redirect to alert creation with pre-filled values
+    const url = new URL('{% url "monitoring:alert_create" %}', window.location.origin);
+    url.searchParams.set('metric_type', 'bandwidth_utilization');
+    url.searchParams.set('source', interfaceName);
+    url.searchParams.set('threshold_value', '80');
+    url.searchParams.set('name', `High Bandwidth - ${interfaceName}`);
+    
+    window.location.href = url.toString();
+}
+
+function refreshInterfaces() {
+    const button = event.target;
+    const originalText = button.innerHTML;
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refreshing...';
+    button.disabled = true;
+    
+    setTimeout(() => {
+        window.location.reload();
+    }, 1000);
+}
+
+function showBandwidthChart() {
+    // Focus on the bandwidth chart or expand it
+    document.getElementById('bandwidthChart').scrollIntoView({ behavior: 'smooth' });
+}
+
+function setupRealTimeUpdates() {
+    // Update bandwidth chart every 15 seconds
+    setInterval(() => {
+        loadBandwidthData();
+    }, 15000);
+}
+</script>
+
+<style>
+.stat-card {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border-radius: 10px;
+    padding: 20px;
+    text-align: center;
+    margin-bottom: 20px;
+}
+
+.stat-value {
+    font-size: 2em;
+    font-weight: bold;
+    margin-bottom: 5px;
+}
+
+.stat-label {
+    font-size: 0.9em;
+    opacity: 0.9;
+}
+
+.btn-xs {
+    padding: 2px 6px;
+    font-size: 0.75em;
+}
+
+.alert-suggestion {
+    padding: 8px;
+    margin-bottom: 8px;
+    background: #f8f9fa;
+    border-radius: 4px;
+}
+</style>
+{% endblock %}

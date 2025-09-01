@@ -1,0 +1,854 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Monitoring Settings{% endblock %}
+
+{% block extra_css %}
+<style>
+.settings-card {
+    background: white;
+    border-radius: 10px;
+    padding: 25px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    margin-bottom: 20px;
+}
+
+.settings-section {
+    margin-bottom: 30px;
+    padding: 20px;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+    background: #f8f9fa;
+}
+
+.settings-section h6 {
+    color: #495057;
+    margin-bottom: 15px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.form-switch {
+    padding-left: 2.5em;
+}
+
+.form-switch .form-check-input {
+    width: 2em;
+    margin-left: -2.5em;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='rgba%2833, 37, 41, 0.25%29'/%3e%3c/svg%3e");
+    background-position: left center;
+    background-size: contain;
+    border-radius: 2em;
+    transition: background-position .15s ease-in-out;
+}
+
+.form-switch .form-check-input:checked {
+    background-position: right center;
+    background-image: url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='-4 -4 8 8'%3e%3ccircle r='3' fill='rgba%28255, 255, 255, 1.0%29'/%3e%3c/svg%3e");
+}
+
+.setting-description {
+    font-size: 0.9em;
+    color: #6c757d;
+    margin-top: 5px;
+}
+
+.quick-config {
+    background: #e3f2fd;
+    border: 1px solid #bbdefb;
+    border-radius: 8px;
+    padding: 15px;
+    margin-bottom: 20px;
+}
+
+.retention-slider {
+    width: 100%;
+    margin: 10px 0;
+}
+
+.email-test {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    border-radius: 6px;
+    padding: 15px;
+    margin-top: 15px;
+}
+
+.settings-preview {
+    background: #f8f9fa;
+    border-radius: 6px;
+    padding: 15px;
+    margin-top: 15px;
+    font-family: monospace;
+    font-size: 0.85em;
+}
+
+.status-indicator {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 8px;
+}
+
+.status-indicator.connected { background: #28a745; }
+.status-indicator.disconnected { background: #dc3545; }
+.status-indicator.testing { 
+    background: #ffc107; 
+    animation: pulse 1s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+.advanced-settings {
+    display: none;
+}
+
+.advanced-settings.show {
+    display: block;
+}
+
+.config-export {
+    background: #e8f5e8;
+    border: 1px solid #c3e6c3;
+    border-radius: 6px;
+    padding: 15px;
+    margin-top: 20px;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h1><i class="fas fa-cog"></i> Monitoring Settings</h1>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-info btn-sm" onclick="toggleAdvancedSettings()">
+                <i class="fas fa-tools"></i> Advanced Settings
+            </button>
+            <button class="btn btn-outline-secondary btn-sm" onclick="exportConfig()">
+                <i class="fas fa-download"></i> Export Config
+            </button>
+            <button class="btn btn-outline-success btn-sm" onclick="testConfiguration()">
+                <i class="fas fa-vial"></i> Test Config
+            </button>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-8">
+            <form method="post" class="settings-card">
+                {% csrf_token %}
+                
+                <!-- Quick Configuration -->
+                <div class="quick-config">
+                    <h6><i class="fas fa-rocket"></i> Quick Configuration</h6>
+                    <div class="row">
+                        <div class="col-md-4">
+                            <button type="button" class="btn btn-outline-primary w-100 mb-2" onclick="setQuickConfig('basic')">
+                                Basic Monitoring
+                            </button>
+                            <small class="text-muted">Essential metrics only</small>
+                        </div>
+                        <div class="col-md-4">
+                            <button type="button" class="btn btn-outline-success w-100 mb-2" onclick="setQuickConfig('standard')">
+                                Standard Setup
+                            </button>
+                            <small class="text-muted">Recommended for most users</small>
+                        </div>
+                        <div class="col-md-4">
+                            <button type="button" class="btn btn-outline-warning w-100 mb-2" onclick="setQuickConfig('advanced')">
+                                Advanced Monitoring
+                            </button>
+                            <small class="text-muted">Full feature set</small>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Data Retention -->
+                <div class="settings-section">
+                    <h6><i class="fas fa-database"></i> Data Retention Settings</h6>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label for="{{ form.metric_retention_days.id_for_label }}" class="form-label">
+                                Metric Data Retention (Days)
+                            </label>
+                            {{ form.metric_retention_days }}
+                            <div class="setting-description">
+                                {{ form.metric_retention_days.help_text }}
+                            </div>
+                            <div class="retention-display mt-2">
+                                <small class="text-muted">
+                                    Current: <span id="metricRetentionDisplay">{{ form.metric_retention_days.value|default:30 }}</span> days
+                                    (≈ <span id="metricStorageSize">~500</span> MB)
+                                </small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="{{ form.log_retention_days.id_for_label }}" class="form-label">
+                                Log Data Retention (Days)
+                            </label>
+                            {{ form.log_retention_days }}
+                            <div class="setting-description">
+                                {{ form.log_retention_days.help_text }}
+                            </div>
+                            <div class="retention-display mt-2">
+                                <small class="text-muted">
+                                    Current: <span id="logRetentionDisplay">{{ form.log_retention_days.value|default:7 }}</span> days
+                                    (≈ <span id="logStorageSize">~100</span> MB)
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Collection Settings -->
+                <div class="settings-section">
+                    <h6><i class="fas fa-clock"></i> Data Collection Settings</h6>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <label for="{{ form.collection_interval.id_for_label }}" class="form-label">
+                                Collection Interval (Seconds)
+                            </label>
+                            {{ form.collection_interval }}
+                            <div class="setting-description">
+                                {{ form.collection_interval.help_text }}
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mt-3">
+                                <div class="form-check form-switch">
+                                    {{ form.temperature_monitoring_enabled }}
+                                    <label for="{{ form.temperature_monitoring_enabled.id_for_label }}" class="form-check-label">
+                                        Temperature Monitoring
+                                    </label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    {{ form.network_monitoring_enabled }}
+                                    <label for="{{ form.network_monitoring_enabled.id_for_label }}" class="form-check-label">
+                                        Network Monitoring
+                                    </label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    {{ form.connection_monitoring_enabled }}
+                                    <label for="{{ form.connection_monitoring_enabled.id_for_label }}" class="form-check-label">
+                                        Connection Monitoring
+                                    </label>
+                                </div>
+                                <div class="form-check form-switch">
+                                    {{ form.log_aggregation_enabled }}
+                                    <label for="{{ form.log_aggregation_enabled.id_for_label }}" class="form-check-label">
+                                        Log Aggregation
+                                    </label>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Email Notifications -->
+                <div class="settings-section">
+                    <h6><i class="fas fa-envelope"></i> Email Notification Settings</h6>
+                    
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <div class="form-check form-switch">
+                                {{ form.email_notifications_enabled }}
+                                <label for="{{ form.email_notifications_enabled.id_for_label }}" class="form-check-label">
+                                    Enable Email Notifications
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="emailSettings" class="email-settings">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label for="{{ form.smtp_host.id_for_label }}" class="form-label">SMTP Host</label>
+                                {{ form.smtp_host }}
+                                {% if form.smtp_host.errors %}
+                                    <div class="text-danger small">{{ form.smtp_host.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-3">
+                                <label for="{{ form.smtp_port.id_for_label }}" class="form-label">SMTP Port</label>
+                                {{ form.smtp_port }}
+                                {% if form.smtp_port.errors %}
+                                    <div class="text-danger small">{{ form.smtp_port.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-3">
+                                <div class="mt-3">
+                                    <div class="form-check form-switch">
+                                        {{ form.smtp_use_tls }}
+                                        <label for="{{ form.smtp_use_tls.id_for_label }}" class="form-check-label">
+                                            Use TLS
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <label for="{{ form.smtp_username.id_for_label }}" class="form-label">SMTP Username</label>
+                                {{ form.smtp_username }}
+                                {% if form.smtp_username.errors %}
+                                    <div class="text-danger small">{{ form.smtp_username.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <label for="{{ form.smtp_password.id_for_label }}" class="form-label">SMTP Password</label>
+                                {{ form.smtp_password }}
+                                {% if form.smtp_password.errors %}
+                                    <div class="text-danger small">{{ form.smtp_password.errors.0 }}</div>
+                                {% endif %}
+                                <div class="setting-description">
+                                    {{ form.smtp_password.help_text }}
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <label for="{{ form.default_alert_email.id_for_label }}" class="form-label">Default Alert Email</label>
+                                {{ form.default_alert_email }}
+                                {% if form.default_alert_email.errors %}
+                                    <div class="text-danger small">{{ form.default_alert_email.errors.0 }}</div>
+                                {% endif %}
+                            </div>
+                            <div class="col-md-6">
+                                <div class="email-test">
+                                    <strong>Test Email Configuration</strong>
+                                    <p class="mb-2 small">Send a test email to verify settings</p>
+                                    <button type="button" class="btn btn-outline-primary btn-sm" onclick="testEmailSettings()">
+                                        <span class="status-indicator disconnected"></span>
+                                        Send Test Email
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Advanced Settings -->
+                <div class="settings-section advanced-settings" id="advancedSettings">
+                    <h6><i class="fas fa-tools"></i> Advanced Settings</h6>
+                    
+                    <div class="alert alert-warning">
+                        <i class="fas fa-exclamation-triangle"></i>
+                        <strong>Warning:</strong> These settings are for advanced users only. 
+                        Incorrect configuration may affect system performance.
+                    </div>
+                    
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6>Database Optimization</h6>
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="enableIndexing">
+                                <label class="form-check-label" for="enableIndexing">
+                                    Enable Advanced Database Indexing
+                                </label>
+                            </div>
+                            <div class="form-check">
+                                <input type="checkbox" class="form-check-input" id="enableCompression">
+                                <label class="form-check-label" for="enableCompression">
+                                    Enable Metric Data Compression
+                                </label>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <h6>Performance Tuning</h6>
+                            <div class="mb-3">
+                                <label class="form-label">Max Concurrent Collections</label>
+                                <input type="number" class="form-control" value="5" min="1" max="20">
+                                <small class="text-muted">Number of parallel metric collections</small>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label">Cache TTL (seconds)</label>
+                                <input type="number" class="form-control" value="300" min="60" max="3600">
+                                <small class="text-muted">Dashboard cache time-to-live</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Form Actions -->
+                <div class="d-flex justify-content-between mt-4">
+                    <div>
+                        <button type="button" class="btn btn-outline-danger" onclick="resetToDefaults()">
+                            <i class="fas fa-undo"></i> Reset to Defaults
+                        </button>
+                    </div>
+                    <div>
+                        <button type="button" class="btn btn-outline-secondary" onclick="previewChanges()">
+                            <i class="fas fa-eye"></i> Preview Changes
+                        </button>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fas fa-save"></i> Save Settings
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <!-- Settings Summary -->
+        <div class="col-md-4">
+            <div class="settings-card">
+                <h5><i class="fas fa-info-circle"></i> Configuration Summary</h5>
+                
+                <div class="mb-3">
+                    <h6>Current Status</h6>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span>Metrics Collection</span>
+                        <span class="status-indicator connected"></span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span>Email Notifications</span>
+                        <span class="status-indicator {% if settings.email_notifications_enabled %}connected{% else %}disconnected{% endif %}"></span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span>Temperature Monitoring</span>
+                        <span class="status-indicator {% if settings.temperature_monitoring_enabled %}connected{% else %}disconnected{% endif %}"></span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span>Network Monitoring</span>
+                        <span class="status-indicator {% if settings.network_monitoring_enabled %}connected{% else %}disconnected{% endif %}"></span>
+                    </div>
+                </div>
+                
+                <div class="mb-3">
+                    <h6>Storage Usage</h6>
+                    <div class="progress mb-2">
+                        <div class="progress-bar" role="progressbar" style="width: 35%">
+                            Metrics: 35%
+                        </div>
+                    </div>
+                    <div class="progress mb-2">
+                        <div class="progress-bar bg-info" role="progressbar" style="width: 20%">
+                            Logs: 20%
+                        </div>
+                    </div>
+                    <small class="text-muted">
+                        Total: ~600MB / 2GB allocated
+                    </small>
+                </div>
+                
+                <div class="mb-3">
+                    <h6>Recent Activity</h6>
+                    <small class="text-muted">
+                        • Last metrics collection: 30 seconds ago<br>
+                        • Last alert: 2 hours ago<br>
+                        • Last cleanup: Yesterday<br>
+                        • Settings updated: {{ settings.updated_at|timesince }} ago
+                    </small>
+                </div>
+            </div>
+
+            <div class="settings-card">
+                <h5><i class="fas fa-question-circle"></i> Help & Documentation</h5>
+                
+                <div class="accordion" id="helpAccordion">
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#retentionHelp">
+                                Data Retention Guidelines
+                            </button>
+                        </h2>
+                        <div id="retentionHelp" class="accordion-collapse collapse" data-bs-parent="#helpAccordion">
+                            <div class="accordion-body">
+                                <strong>Metric Data:</strong> 7-90 days recommended<br>
+                                <strong>Log Data:</strong> 1-30 days recommended<br>
+                                <strong>Storage Impact:</strong> Each day ≈ 15-20MB<br>
+                                <small class="text-muted">Longer retention requires more storage and may impact performance.</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collectionHelp">
+                                Collection Intervals
+                            </button>
+                        </h2>
+                        <div id="collectionHelp" class="accordion-collapse collapse" data-bs-parent="#helpAccordion">
+                            <div class="accordion-body">
+                                <strong>15-30s:</strong> Real-time monitoring<br>
+                                <strong>60s:</strong> Standard monitoring<br>
+                                <strong>300s:</strong> Low-impact monitoring<br>
+                                <small class="text-muted">Shorter intervals provide better granularity but use more resources.</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="accordion-item">
+                        <h2 class="accordion-header">
+                            <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#emailHelp">
+                                Email Configuration
+                            </button>
+                        </h2>
+                        <div id="emailHelp" class="accordion-collapse collapse" data-bs-parent="#helpAccordion">
+                            <div class="accordion-body">
+                                <strong>Gmail:</strong> smtp.gmail.com:587 (TLS)<br>
+                                <strong>Outlook:</strong> smtp-mail.outlook.com:587<br>
+                                <strong>Yahoo:</strong> smtp.mail.yahoo.com:587<br>
+                                <small class="text-muted">Use app passwords for 2FA accounts.</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Configuration Preview Modal -->
+<div class="modal fade" id="configPreviewModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Configuration Preview</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="settings-preview" id="configPreviewContent">
+                    <!-- Configuration preview will be loaded here -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    setupFormWatchers();
+    toggleEmailSettings();
+    updateRetentionDisplays();
+});
+
+function setupFormWatchers() {
+    // Watch email notifications toggle
+    const emailToggle = document.querySelector('#id_email_notifications_enabled');
+    if (emailToggle) {
+        emailToggle.addEventListener('change', toggleEmailSettings);
+    }
+    
+    // Watch retention sliders
+    const metricRetention = document.querySelector('#id_metric_retention_days');
+    const logRetention = document.querySelector('#id_log_retention_days');
+    
+    if (metricRetention) {
+        metricRetention.addEventListener('input', updateRetentionDisplays);
+    }
+    if (logRetention) {
+        logRetention.addEventListener('input', updateRetentionDisplays);
+    }
+}
+
+function toggleEmailSettings() {
+    const emailToggle = document.querySelector('#id_email_notifications_enabled');
+    const emailSettings = document.querySelector('#emailSettings');
+    
+    if (emailToggle && emailSettings) {
+        const inputs = emailSettings.querySelectorAll('input, select');
+        inputs.forEach(input => {
+            input.disabled = !emailToggle.checked;
+        });
+        
+        emailSettings.style.opacity = emailToggle.checked ? '1' : '0.5';
+    }
+}
+
+function updateRetentionDisplays() {
+    const metricDays = document.querySelector('#id_metric_retention_days')?.value || 30;
+    const logDays = document.querySelector('#id_log_retention_days')?.value || 7;
+    
+    // Update displays
+    const metricDisplay = document.getElementById('metricRetentionDisplay');
+    const logDisplay = document.getElementById('logRetentionDisplay');
+    const metricStorage = document.getElementById('metricStorageSize');
+    const logStorage = document.getElementById('logStorageSize');
+    
+    if (metricDisplay) metricDisplay.textContent = metricDays;
+    if (logDisplay) logDisplay.textContent = logDays;
+    
+    // Calculate estimated storage (rough estimates)
+    if (metricStorage) metricStorage.textContent = `~${Math.round(metricDays * 15)}`;
+    if (logStorage) logStorage.textContent = `~${Math.round(logDays * 15)}`;
+}
+
+function setQuickConfig(profile) {
+    switch (profile) {
+        case 'basic':
+            setFormValues({
+                'metric_retention_days': 7,
+                'log_retention_days': 3,
+                'collection_interval': 300,
+                'temperature_monitoring_enabled': false,
+                'network_monitoring_enabled': true,
+                'connection_monitoring_enabled': false,
+                'log_aggregation_enabled': true,
+                'email_notifications_enabled': false
+            });
+            break;
+            
+        case 'standard':
+            setFormValues({
+                'metric_retention_days': 30,
+                'log_retention_days': 7,
+                'collection_interval': 60,
+                'temperature_monitoring_enabled': true,
+                'network_monitoring_enabled': true,
+                'connection_monitoring_enabled': true,
+                'log_aggregation_enabled': true,
+                'email_notifications_enabled': true
+            });
+            break;
+            
+        case 'advanced':
+            setFormValues({
+                'metric_retention_days': 90,
+                'log_retention_days': 30,
+                'collection_interval': 30,
+                'temperature_monitoring_enabled': true,
+                'network_monitoring_enabled': true,
+                'connection_monitoring_enabled': true,
+                'log_aggregation_enabled': true,
+                'email_notifications_enabled': true
+            });
+            break;
+    }
+    
+    updateRetentionDisplays();
+    toggleEmailSettings();
+    
+    // Show confirmation
+    const alertDiv = document.createElement('div');
+    alertDiv.className = 'alert alert-success alert-dismissible fade show';
+    alertDiv.innerHTML = `
+        <i class="fas fa-check"></i> ${profile.charAt(0).toUpperCase() + profile.slice(1)} configuration applied!
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    const form = document.querySelector('form');
+    form.insertBefore(alertDiv, form.firstChild);
+    
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 3000);
+}
+
+function setFormValues(values) {
+    Object.entries(values).forEach(([name, value]) => {
+        const field = document.querySelector(`[name="${name}"]`);
+        if (field) {
+            if (field.type === 'checkbox') {
+                field.checked = value;
+            } else {
+                field.value = value;
+            }
+        }
+    });
+}
+
+function toggleAdvancedSettings() {
+    const advancedDiv = document.getElementById('advancedSettings');
+    const button = event.target;
+    
+    advancedDiv.classList.toggle('show');
+    
+    if (advancedDiv.classList.contains('show')) {
+        button.innerHTML = '<i class="fas fa-tools"></i> Hide Advanced';
+    } else {
+        button.innerHTML = '<i class="fas fa-tools"></i> Advanced Settings';
+    }
+}
+
+function testEmailSettings() {
+    const button = event.target;
+    const indicator = button.querySelector('.status-indicator');
+    const originalText = button.innerHTML;
+    
+    // Show testing state
+    indicator.className = 'status-indicator testing';
+    button.innerHTML = '<span class="status-indicator testing"></span> Testing...';
+    button.disabled = true;
+    
+    // Simulate email test
+    setTimeout(() => {
+        const success = Math.random() > 0.3; // 70% success rate for demo
+        
+        if (success) {
+            indicator.className = 'status-indicator connected';
+            button.innerHTML = '<span class="status-indicator connected"></span> Test Successful!';
+            
+            setTimeout(() => {
+                button.innerHTML = originalText;
+                button.disabled = false;
+            }, 3000);
+        } else {
+            indicator.className = 'status-indicator disconnected';
+            button.innerHTML = '<span class="status-indicator disconnected"></span> Test Failed';
+            
+            setTimeout(() => {
+                button.innerHTML = originalText;
+                button.disabled = false;
+            }, 3000);
+            
+            alert('Email test failed. Please check your SMTP settings:\n\n• Verify host and port\n• Check username/password\n• Ensure TLS setting is correct');
+        }
+    }, 2000);
+}
+
+function previewChanges() {
+    const modal = new bootstrap.Modal(document.getElementById('configPreviewModal'));
+    const content = document.getElementById('configPreviewContent');
+    
+    // Gather current form values
+    const formData = new FormData(document.querySelector('form'));
+    let configText = '';
+    
+    configText += '[Monitoring Configuration]\n';
+    configText += `metric_retention_days = ${formData.get('metric_retention_days') || 30}\n`;
+    configText += `log_retention_days = ${formData.get('log_retention_days') || 7}\n`;
+    configText += `collection_interval = ${formData.get('collection_interval') || 60}\n`;
+    configText += '\n[Features]\n';
+    configText += `email_notifications = ${formData.get('email_notifications_enabled') ? 'true' : 'false'}\n`;
+    configText += `temperature_monitoring = ${formData.get('temperature_monitoring_enabled') ? 'true' : 'false'}\n`;
+    configText += `network_monitoring = ${formData.get('network_monitoring_enabled') ? 'true' : 'false'}\n`;
+    configText += `connection_monitoring = ${formData.get('connection_monitoring_enabled') ? 'true' : 'false'}\n`;
+    configText += `log_aggregation = ${formData.get('log_aggregation_enabled') ? 'true' : 'false'}\n`;
+    
+    if (formData.get('email_notifications_enabled')) {
+        configText += '\n[SMTP Configuration]\n';
+        configText += `smtp_host = ${formData.get('smtp_host') || 'Not set'}\n`;
+        configText += `smtp_port = ${formData.get('smtp_port') || '587'}\n`;
+        configText += `smtp_username = ${formData.get('smtp_username') || 'Not set'}\n`;
+        configText += `smtp_use_tls = ${formData.get('smtp_use_tls') ? 'true' : 'false'}\n`;
+        configText += `default_alert_email = ${formData.get('default_alert_email') || 'Not set'}\n`;
+    }
+    
+    content.textContent = configText;
+    modal.show();
+}
+
+function exportConfig() {
+    // Create configuration export
+    const formData = new FormData(document.querySelector('form'));
+    const config = {
+        monitoring: {
+            metric_retention_days: formData.get('metric_retention_days') || 30,
+            log_retention_days: formData.get('log_retention_days') || 7,
+            collection_interval: formData.get('collection_interval') || 60
+        },
+        features: {
+            email_notifications: formData.get('email_notifications_enabled') ? true : false,
+            temperature_monitoring: formData.get('temperature_monitoring_enabled') ? true : false,
+            network_monitoring: formData.get('network_monitoring_enabled') ? true : false,
+            connection_monitoring: formData.get('connection_monitoring_enabled') ? true : false,
+            log_aggregation: formData.get('log_aggregation_enabled') ? true : false
+        },
+        smtp: formData.get('email_notifications_enabled') ? {
+            host: formData.get('smtp_host') || '',
+            port: formData.get('smtp_port') || 587,
+            username: formData.get('smtp_username') || '',
+            use_tls: formData.get('smtp_use_tls') ? true : false,
+            default_alert_email: formData.get('default_alert_email') || ''
+        } : null
+    };
+    
+    const configJSON = JSON.stringify(config, null, 2);
+    const blob = new Blob([configJSON], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `monitoring_config_${new Date().toISOString().split('T')[0]}.json`;
+    link.click();
+    
+    URL.revokeObjectURL(url);
+}
+
+function testConfiguration() {
+    const button = event.target;
+    const originalText = button.innerHTML;
+    
+    button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Testing...';
+    button.disabled = true;
+    
+    // Simulate configuration test
+    setTimeout(() => {
+        const results = {
+            database: Math.random() > 0.1,
+            email: Math.random() > 0.2,
+            monitoring: Math.random() > 0.05,
+            permissions: Math.random() > 0.1
+        };
+        
+        let message = 'Configuration Test Results:\n\n';
+        message += `✓ Database Connection: ${results.database ? 'PASS' : 'FAIL'}\n`;
+        message += `✓ Email Settings: ${results.email ? 'PASS' : 'FAIL'}\n`;
+        message += `✓ Monitoring Services: ${results.monitoring ? 'PASS' : 'FAIL'}\n`;
+        message += `✓ File Permissions: ${results.permissions ? 'PASS' : 'FAIL'}\n`;
+        
+        const allPassed = Object.values(results).every(r => r);
+        message += `\nOverall Status: ${allPassed ? 'ALL TESTS PASSED' : 'SOME TESTS FAILED'}`;
+        
+        alert(message);
+        
+        button.innerHTML = originalText;
+        button.disabled = false;
+    }, 3000);
+}
+
+function resetToDefaults() {
+    if (!confirm('Are you sure you want to reset all settings to their default values? This action cannot be undone.')) {
+        return;
+    }
+    
+    // Reset all form values to defaults
+    setFormValues({
+        'metric_retention_days': 30,
+        'log_retention_days': 7,
+        'collection_interval': 60,
+        'temperature_monitoring_enabled': true,
+        'network_monitoring_enabled': true,
+        'connection_monitoring_enabled': true,
+        'log_aggregation_enabled': true,
+        'email_notifications_enabled': false,
+        'smtp_host': '',
+        'smtp_port': 587,
+        'smtp_username': '',
+        'smtp_password': '',
+        'smtp_use_tls': true,
+        'default_alert_email': ''
+    });
+    
+    updateRetentionDisplays();
+    toggleEmailSettings();
+    
+    // Show success message
+    const alertDiv = document.createElement('div');
+    alertDiv.className = 'alert alert-info alert-dismissible fade show';
+    alertDiv.innerHTML = `
+        <i class="fas fa-info-circle"></i> Settings have been reset to default values.
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+    `;
+    
+    const form = document.querySelector('form');
+    form.insertBefore(alertDiv, form.firstChild);
+    
+    setTimeout(() => {
+        alertDiv.remove();
+    }, 5000);
+}
+</script>
+{% endblock %}

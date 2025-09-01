@@ -157,27 +157,43 @@ table inet nat {
         """Build nftables rule from NFTableRule model fields"""
         rule_parts = []
         
-        # Protocol
-        if rule.protocol and rule.protocol != 'all':
-            rule_parts.append(rule.protocol)
-        
         # Source IP
         if rule.source_ip:
             rule_parts.append(f"ip saddr {rule.source_ip}")
         
-        # Source port
-        if rule.source_port:
-            if rule.protocol and rule.protocol in ['tcp', 'udp']:
-                rule_parts.append(f"{rule.protocol} sport {rule.source_port}")
-        
-        # Destination IP
+        # Destination IP  
         if rule.destination_ip:
             rule_parts.append(f"ip daddr {rule.destination_ip}")
         
-        # Destination port
-        if rule.destination_port:
-            if rule.protocol and rule.protocol in ['tcp', 'udp']:
-                rule_parts.append(f"{rule.protocol} dport {rule.destination_port}")
+        # Protocol and ports
+        if rule.protocol and rule.protocol != 'all':
+            if rule.protocol in ['tcp', 'udp']:
+                # Start with protocol
+                protocol_rule = rule.protocol
+                
+                # Add ports if specified
+                port_parts = []
+                if rule.source_port:
+                    port_parts.append(f"sport {rule.source_port}")
+                if rule.destination_port:
+                    port_parts.append(f"dport {rule.destination_port}")
+                
+                if port_parts:
+                    protocol_rule += ' ' + ' '.join(port_parts)
+                
+                rule_parts.append(protocol_rule)
+            else:
+                # For non-TCP/UDP protocols (like icmp)
+                rule_parts.append(rule.protocol)
+        else:
+            # If no protocol specified but ports are, assume TCP
+            if rule.source_port or rule.destination_port:
+                port_parts = ['tcp']
+                if rule.source_port:
+                    port_parts.append(f"sport {rule.source_port}")
+                if rule.destination_port:
+                    port_parts.append(f"dport {rule.destination_port}")
+                rule_parts.append(' '.join(port_parts))
         
         # Action
         rule_parts.append(rule.action)

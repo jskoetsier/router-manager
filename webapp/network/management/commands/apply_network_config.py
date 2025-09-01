@@ -48,7 +48,8 @@ class Command(BaseCommand):
         self.stdout.write(f"\nFirewall Rules: {len(config_summary['firewall_rules'])}")
         for rule in config_summary['firewall_rules']:
             status = "enabled" if rule['enabled'] else "disabled"
-            self.stdout.write(f"  {rule['name']}: {rule['rule']} ({status})")
+            rule_desc = f"{rule['protocol']} {rule['source_ip'] or 'any'} -> {rule['destination_ip'] or 'any'}:{rule['destination_port'] or 'any'} {rule['action']}"
+            self.stdout.write(f"  {rule['name']}: {rule_desc} ({status})")
         
         if options['dry_run']:
             self.stdout.write(self.style.WARNING('\nDry run - generating configuration without applying...'))

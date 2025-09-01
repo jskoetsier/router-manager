@@ -103,6 +103,128 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - VPN configurations require proper network planning
 - Regular security updates recommended
 
+## [1.4.0] - 2025-09-01
+
+### Added
+- **🌍 Complete Nginx Reverse Proxy Management**
+  - Full nginx configuration management through intuitive web interface
+  - Create, edit, view, and delete nginx proxy configurations
+  - Real-time nginx configuration generation and deployment
+  - Integration with system nginx service for live configuration updates
+  - Support for HTTP and HTTPS upstream servers with custom headers
+
+- **🔒 Automated SSL Certificate Management**  
+  - Integrated Let's Encrypt certificate automation via certbot
+  - One-click SSL certificate generation for configured domains
+  - Automatic certificate renewal setup with cron scheduling
+  - Certificate status monitoring and expiry date tracking
+  - Support for webroot-based domain validation (ACME challenge)
+
+- **📋 Advanced Domain Configuration**
+  - Comprehensive domain validation with regex patterns
+  - Upstream server configuration with host, port, and protocol selection
+  - Custom proxy timeout settings (connect, read, send timeouts)
+  - Rate limiting configuration with requests per minute controls
+  - Access and error logging configuration per domain
+
+- **🚀 One-Click Deployment System**
+  - Deploy nginx configurations with automatic service reload
+  - Real-time deployment status feedback and error handling
+  - Configuration validation before deployment to prevent service disruption
+  - Rollback capabilities for failed deployments
+  - Integration with SSL certificate generation workflow
+
+- **📊 Enhanced Monitoring & Status**
+  - Real-time nginx service status monitoring
+  - Configuration validation and syntax checking
+  - Nginx version detection and display
+  - Deployment history and audit logging
+  - SSL certificate status and expiry monitoring
+
+- **🗑️ Complete CRUD Operations**
+  - Delete functionality with safety confirmation dialogs
+  - Edit configurations with live validation
+  - Duplicate configuration creation for quick setup
+  - Bulk operations support for multiple configurations
+  - Configuration export and import capabilities
+
+- **🎨 Enhanced User Interface**
+  - Added nginx navigation to main navbar and dashboard
+  - Professional nginx management interface with status indicators
+  - Responsive design optimized for mobile and desktop
+  - Real-time status updates with color-coded badges
+  - Comprehensive configuration details view with action buttons
+
+- **🔧 System Integration Improvements**
+  - Enhanced sudo permissions handling for nginx operations
+  - Automatic nginx directory creation and management
+  - Improved error handling with detailed user feedback
+  - Better integration with existing router management workflow
+  - Support for both bare metal and containerized deployments
+
+### Enhanced
+- **🏠 Dashboard Integration**
+  - Added nginx quick action button to main dashboard
+  - Nginx status widget with service health indicators
+  - Quick access to nginx configurations and deployment status
+  - Integration with existing monitoring and system status displays
+
+- **📱 Mobile Responsiveness**
+  - Optimized nginx management interface for mobile devices
+  - Touch-friendly action buttons and navigation
+  - Responsive table layouts for configuration lists
+  - Mobile-optimized forms and validation feedback
+
+- **🔒 Security Enhancements**
+  - Enhanced validation for domain names and network addresses
+  - Improved command execution with proper privilege escalation
+  - Better error handling to prevent information disclosure
+  - SSL-first approach with automatic HTTPS redirects
+
+### Fixed
+- **🐛 Database Data Consistency**
+  - Fixed incorrect domain name display (git.koetsier.org vs gitlab.koetsier.org)
+  - Corrected deployment status indicators to reflect actual SSL certificate status
+  - Updated nginx configuration records to match production deployments
+  - Fixed domain validation and display inconsistencies
+
+- **🎨 User Interface Improvements**
+  - Added favicon support for better branding and user experience
+  - Fixed base template DOCTYPE typo causing potential rendering issues
+  - Improved navigation consistency across all nginx management pages
+  - Enhanced visual feedback for configuration actions and status
+
+- **⚙️ Production Deployment Issues**
+  - Resolved nginx configuration conflicts during SSL certificate generation
+  - Fixed certbot integration with proper webroot configuration
+  - Improved nginx service management with better error handling
+  - Enhanced certificate directory creation and permission management
+
+### Technical Implementation
+- **Backend Architecture**
+  - Created comprehensive nginx management system in `nginx_mgr` Django app
+  - Implemented `NginxManager` class for service integration and configuration management
+  - Added `CertbotManager` class for SSL certificate lifecycle management
+  - Created deployment logging system for audit trails and troubleshooting
+
+- **Database Models**
+  - `NginxProxyConfig` model for storing nginx configurations
+  - `SSLCertificate` model for tracking certificate status and metadata
+  - `NginxDeploymentLog` model for deployment history and audit trails
+  - Comprehensive model relationships and validation rules
+
+- **Frontend Implementation**
+  - Django ModelForms with Bootstrap 5 styling and real-time validation
+  - Responsive templates with status indicators and action buttons
+  - JavaScript integration for real-time status updates and user feedback
+  - Mobile-optimized interface design with touch-friendly controls
+
+### Production Success
+- Successfully deployed nginx reverse proxy management to production servers
+- SSL certificate generation verified working with Let's Encrypt
+- All nginx management functionality tested and verified on remote servers
+- Production deployment includes git.koetsier.org with valid SSL certificate
+
 ## [1.3.0] - 2025-08-27
 
 ### Added

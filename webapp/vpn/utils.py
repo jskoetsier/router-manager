@@ -66,7 +66,7 @@ def get_ipsec_tunnels():
         # First, check if strongswan is installed and running
         service_check = subprocess.run(['systemctl', 'is-active', 'strongswan'],
                                      capture_output=True, text=True, timeout=5)
-        
+
         if service_check.returncode != 0:
             # StrongSwan not active, return empty list or error
             tunnels.append({
@@ -83,7 +83,7 @@ def get_ipsec_tunnels():
         # Check if swanctl command exists
         swanctl_check = subprocess.run(['which', 'swanctl'],
                                      capture_output=True, text=True, timeout=5)
-        
+
         if swanctl_check.returncode != 0:
             # swanctl not found, try alternative commands
             # Try with full path
@@ -92,7 +92,7 @@ def get_ipsec_tunnels():
                 if subprocess.run(['test', '-x', path], capture_output=True).returncode == 0:
                     swanctl_path = path
                     break
-            
+
             if not swanctl_path:
                 tunnels.append({
                     'name': 'SwanCTL Command',

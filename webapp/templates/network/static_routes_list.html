@@ -67,12 +67,12 @@
                                 <td>{{ route.created_at|date:"M d, Y H:i" }}</td>
                                 <td>
                                     <div class="btn-group" role="group">
-                                        <a href="{% url 'network:edit_static_route' route.id %}" 
+                                        <a href="{% url 'network:edit_static_route' route.id %}"
                                            class="btn btn-sm btn-outline-primary">
                                             <i class="fas fa-edit"></i>
                                         </a>
-                                        <button type="button" 
-                                                class="btn btn-sm btn-outline-danger" 
+                                        <button type="button"
+                                                class="btn btn-sm btn-outline-danger"
                                                 onclick="confirmDelete('{{ route.destination }}', '{% url 'network:delete_static_route' route.id %}')">
                                             <i class="fas fa-trash"></i>
                                         </button>
@@ -85,8 +85,8 @@
                 </div>
                 {% else %}
                 <div class="alert alert-info">
-                    <i class="fas fa-info-circle"></i> 
-                    No static routes configured. 
+                    <i class="fas fa-info-circle"></i>
+                    No static routes configured.
                     <a href="{% url 'network:add_static_route' %}">Add your first static route</a>.
                 </div>
                 {% endif %}

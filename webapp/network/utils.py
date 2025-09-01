@@ -586,22 +586,22 @@ def add_static_route(destination, gateway, interface, metric=100):
             cmd = ["/usr/bin/sudo", "/sbin/ip", "route", "add", "default"]
         else:
             cmd = ["/usr/bin/sudo", "/sbin/ip", "route", "add", destination]
-        
+
         # Add gateway if specified
         if gateway:
             cmd.extend(["via", gateway])
-        
+
         # Add interface if specified
         if interface:
             cmd.extend(["dev", interface])
-        
+
         # Add metric
         if metric:
             cmd.extend(["metric", str(metric)])
-        
+
         result = run_command(cmd)
         return result
-        
+
     except Exception as e:
         return {"success": False, "error": str(e)}
 
@@ -614,18 +614,18 @@ def delete_static_route(destination, gateway=None, interface=None):
             cmd = ["/usr/bin/sudo", "/sbin/ip", "route", "del", "default"]
         else:
             cmd = ["/usr/bin/sudo", "/sbin/ip", "route", "del", destination]
-        
+
         # Add gateway if specified
         if gateway:
             cmd.extend(["via", gateway])
-        
+
         # Add interface if specified
         if interface:
             cmd.extend(["dev", interface])
-        
+
         result = run_command(cmd)
         return result
-        
+
     except Exception as e:
         return {"success": False, "error": str(e)}
 
@@ -635,36 +635,36 @@ def make_route_persistent(destination, gateway, interface, metric=100):
     try:
         # For Rocky Linux/RHEL systems, we'll create a route file
         # This is a simplified approach - production systems may need more sophisticated handling
-        
+
         route_file = f"/etc/sysconfig/network-scripts/route-{interface}"
-        
+
         # Create route entry
         if destination.lower() == 'default':
             route_entry = f"default via {gateway} dev {interface} metric {metric}\n"
         else:
             route_entry = f"{destination} via {gateway} dev {interface} metric {metric}\n"
-        
+
         # Use a simple approach to add the route
         script = f"""#!/bin/bash
 # Add route to persistent configuration
 echo "{route_entry.strip()}" >> {route_file}
 """
-        
+
         # Write and execute the script
         with open("/tmp/add_route.sh", "w") as f:
             f.write(script)
         os.chmod("/tmp/add_route.sh", 0o755)
-        
+
         result = run_command(["/usr/bin/sudo", "/bin/bash", "/tmp/add_route.sh"])
-        
+
         # Clean up
         try:
             os.remove("/tmp/add_route.sh")
         except:
             pass
-        
+
         return result
-        
+
     except Exception as e:
         return {"success": False, "error": str(e)}
 
@@ -673,7 +673,7 @@ def remove_persistent_route(destination, interface):
     """Remove a persistent route from network scripts"""
     try:
         route_file = f"/etc/sysconfig/network-scripts/route-{interface}"
-        
+
         # Create a script to remove the route
         script = f"""#!/bin/bash
 # Remove route from persistent configuration
@@ -685,21 +685,21 @@ if [ -f "{route_file}" ]; then
     mv {route_file}.tmp {route_file}
 fi
 """
-        
+
         # Write and execute the script
         with open("/tmp/remove_route.sh", "w") as f:
             f.write(script)
         os.chmod("/tmp/remove_route.sh", 0o755)
-        
+
         result = run_command(["/usr/bin/sudo", "/bin/bash", "/tmp/remove_route.sh"])
-        
+
         # Clean up
         try:
             os.remove("/tmp/remove_route.sh")
         except:
             pass
-        
+
         return result
-        
+
     except Exception as e:
         return {"success": False, "error": str(e)}

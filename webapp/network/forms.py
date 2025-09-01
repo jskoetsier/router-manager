@@ -8,7 +8,7 @@ from .models import Route, NetworkInterface
 
 class RouteForm(forms.ModelForm):
     """Form for creating/editing static routes"""
-    
+
     class Meta:
         model = Route
         fields = ['destination', 'gateway', 'interface', 'metric', 'enabled']
@@ -40,7 +40,7 @@ class RouteForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.fields['interface'].queryset = NetworkInterface.objects.filter(enabled=True)
         self.fields['interface'].empty_label = "Select interface"
-        
+
     def clean_destination(self):
         destination = self.cleaned_data.get('destination')
         if destination:
@@ -54,7 +54,7 @@ class RouteForm(forms.ModelForm):
             except ValueError:
                 raise forms.ValidationError('Invalid network format. Use CIDR notation (e.g., 192.168.1.0/24)')
         return destination
-        
+
     def clean_gateway(self):
         gateway = self.cleaned_data.get('gateway')
         if gateway:

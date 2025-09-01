@@ -240,7 +240,13 @@
                                                      data-value="{{ interface.latest_rx.value }}">
                                                 </div>
                                             </div>
-                                            <small style="width: 80px;">{{ interface.latest_rx.value|filesizeformat }}</small>
+                                            <small style="width: 80px;">
+                                                {% if interface.latest_rx.value %}
+                                                    {{ interface.latest_rx.value|filesizeformat }}
+                                                {% else %}
+                                                    0 B
+                                                {% endif %}
+                                            </small>
                                         </div>
                                     {% endif %}
                                     
@@ -253,7 +259,13 @@
                                                      data-value="{{ interface.latest_tx.value }}">
                                                 </div>
                                             </div>
-                                            <small style="width: 80px;">{{ interface.latest_tx.value|filesizeformat }}</small>
+                                            <small style="width: 80px;">
+                                                {% if interface.latest_tx.value %}
+                                                    {{ interface.latest_tx.value|filesizeformat }}
+                                                {% else %}
+                                                    0 B
+                                                {% endif %}
+                                            </small>
                                         </div>
                                     {% endif %}
                                     

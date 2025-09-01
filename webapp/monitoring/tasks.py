@@ -56,35 +56,35 @@ def check_system_health(self):
     """Check overall system health and generate summary"""
     try:
         logger.info("Performing system health check")
-        
+
         from .models import MetricData, AlertInstance, ServiceStatus
         from django.utils import timezone
         from datetime import timedelta
-        
+
         # Check for critical alerts in the last hour
         recent_alerts = AlertInstance.objects.filter(
             triggered_at__gte=timezone.now() - timedelta(hours=1),
             alert__severity='critical'
         ).count()
-        
+
         # Check service status
         failed_services = ServiceStatus.objects.filter(status='failed').count()
-        
+
         # Check recent metrics availability
         recent_metrics = MetricData.objects.filter(
             timestamp__gte=timezone.now() - timedelta(minutes=10)
         ).count()
-        
+
         health_data = {
             'recent_critical_alerts': recent_alerts,
             'failed_services': failed_services,
             'recent_metrics_count': recent_metrics,
             'check_time': timezone.now().isoformat()
         }
-        
+
         logger.info(f"System health check completed: {health_data}")
         return health_data
-        
+
     except Exception as e:
         logger.error(f"Error in health check task: {e}")
         self.retry(countdown=300, max_retries=2)

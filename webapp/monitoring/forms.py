@@ -50,12 +50,12 @@ class AlertForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        
+
         # Add help text
         self.fields['email_recipients'].help_text = "Enter email addresses, one per line"
         self.fields['check_interval'].help_text = "Check interval in seconds (minimum 30)"
         self.fields['source'].help_text = "Optional: Leave blank to monitor all sources"
-        
+
         # Set initial values
         if not self.instance.pk:
             self.fields['enabled'].initial = True
@@ -67,7 +67,7 @@ class AlertForm(forms.ModelForm):
         emails_text = self.cleaned_data.get('email_recipients', '')
         if not emails_text:
             return []
-        
+
         emails = []
         for line in emails_text.strip().split('\n'):
             email = line.strip()
@@ -76,7 +76,7 @@ class AlertForm(forms.ModelForm):
                 if '@' not in email or '.' not in email:
                     raise ValidationError(f"Invalid email address: {email}")
                 emails.append(email)
-        
+
         return emails
 
     def clean_check_interval(self):
@@ -89,11 +89,11 @@ class AlertForm(forms.ModelForm):
     def clean(self):
         """Additional form validation"""
         cleaned_data = super().clean()
-        
+
         # Validate threshold value based on metric type
         metric_type = cleaned_data.get('metric_type')
         threshold_value = cleaned_data.get('threshold_value')
-        
+
         if metric_type and threshold_value is not None:
             # Validate percentage metrics
             if metric_type in ['cpu', 'memory', 'disk', 'bandwidth_utilization'] and \
@@ -101,13 +101,13 @@ class AlertForm(forms.ModelForm):
                 raise ValidationError({
                     'threshold_value': 'Percentage values must be between 0 and 100'
                 })
-            
+
             # Validate temperature metrics
             if metric_type == 'temperature' and threshold_value > 120:
                 raise ValidationError({
                     'threshold_value': 'Temperature threshold seems too high (>120°C)'
                 })
-        
+
         return cleaned_data
 
 
@@ -180,7 +180,7 @@ class MonitoringSettingsForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        
+
         # Add help text
         self.fields['metric_retention_days'].help_text = "Days to keep historical metrics (1-365)"
         self.fields['log_retention_days'].help_text = "Days to keep log entries (1-90)"
@@ -190,38 +190,38 @@ class MonitoringSettingsForm(forms.ModelForm):
     def clean_smtp_password(self):
         """Handle password field"""
         password = self.cleaned_data.get('smtp_password')
-        
+
         # If password is empty and we're updating, keep the existing password
         if not password and self.instance.pk:
             return self.instance.smtp_password
-        
+
         return password
 
     def clean(self):
         """Additional form validation"""
         cleaned_data = super().clean()
-        
+
         # If email notifications are enabled, validate SMTP settings
         if cleaned_data.get('email_notifications_enabled'):
             smtp_host = cleaned_data.get('smtp_host')
             smtp_port = cleaned_data.get('smtp_port')
             default_email = cleaned_data.get('default_alert_email')
-            
+
             if not smtp_host:
                 raise ValidationError({
                     'smtp_host': 'SMTP host is required when email notifications are enabled'
                 })
-            
+
             if not smtp_port:
                 raise ValidationError({
                     'smtp_port': 'SMTP port is required when email notifications are enabled'
                 })
-            
+
             if not default_email:
                 raise ValidationError({
                     'default_alert_email': 'Default alert email is required when notifications are enabled'
                 })
-        
+
         return cleaned_data
 
 
@@ -241,7 +241,7 @@ class MetricFilterForm(forms.Form):
         widget=forms.Select(attrs={'class': 'form-select'}),
         required=False
     )
-    
+
     source = forms.CharField(
         widget=forms.TextInput(attrs={
             'class': 'form-control',
@@ -249,7 +249,7 @@ class MetricFilterForm(forms.Form):
         }),
         required=False
     )
-    
+
     hours = forms.ChoiceField(
         choices=HOURS_CHOICES,
         widget=forms.Select(attrs={'class': 'form-select'}),
@@ -273,20 +273,20 @@ class LogFilterForm(forms.Form):
         initial='all',
         required=False
     )
-    
+
     level = forms.ChoiceField(
         choices=[('all', 'All Levels')] + list(SystemLog.LOG_LEVELS),
         widget=forms.Select(attrs={'class': 'form-select'}),
         initial='all',
         required=False
     )
-    
+
     hours = forms.ChoiceField(
         choices=HOURS_CHOICES,
         widget=forms.Select(attrs={'class': 'form-select'}),
         initial='24'
     )
-    
+
     search = forms.CharField(
         widget=forms.TextInput(attrs={
             'class': 'form-control',
@@ -305,7 +305,7 @@ class ConnectionFilterForm(forms.Form):
         initial='all',
         required=False
     )
-    
+
     state = forms.CharField(
         widget=forms.TextInput(attrs={
             'class': 'form-control',

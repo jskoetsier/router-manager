@@ -207,15 +207,15 @@
                                             {{ service.status|title }}
                                         </span>
                                     </h5>
-                                    
+
                                     <div class="service-info">
                                         <p class="mb-1">
                                             <small class="text-muted">
-                                                <i class="fas fa-clock"></i> Last checked: 
+                                                <i class="fas fa-clock"></i> Last checked:
                                                 {{ service.last_checked|timesince }} ago
                                             </small>
                                         </p>
-                                        
+
                                         {% if service.status == 'running' %}
                                             {% if service.uptime_seconds > 0 %}
                                                 <p class="mb-1">
@@ -224,24 +224,24 @@
                                                     </span>
                                                 </p>
                                             {% endif %}
-                                            
+
                                             {% if service.cpu_percent > 0 or service.memory_mb > 0 %}
                                                 <div class="resource-usage">
                                                     <small>CPU:</small>
                                                     <div class="progress">
-                                                        <div class="progress-bar" 
+                                                        <div class="progress-bar"
                                                              style="width: {{ service.cpu_percent|floatformat:0 }}%"
                                                              title="CPU: {{ service.cpu_percent|floatformat:1 }}%">
                                                         </div>
                                                     </div>
                                                     <small>{{ service.cpu_percent|floatformat:1 }}%</small>
                                                 </div>
-                                                
+
                                                 {% if service.memory_mb > 0 %}
                                                     <div class="resource-usage">
                                                         <small>RAM:</small>
                                                         <div class="progress">
-                                                            <div class="progress-bar bg-info" 
+                                                            <div class="progress-bar bg-info"
                                                                  style="width: {{ service.memory_percent|floatformat:0 }}%"
                                                                  title="Memory: {{ service.memory_mb|floatformat:0 }}MB">
                                                             </div>
@@ -253,16 +253,16 @@
                                         {% endif %}
                                     </div>
                                 </div>
-                                
+
                                 <div class="dropdown">
-                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" 
+                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle"
                                             type="button" data-bs-toggle="dropdown">
                                         Actions
                                     </button>
                                     <ul class="dropdown-menu">
                                         {% if service.status != 'running' %}
                                             <li>
-                                                <a class="dropdown-item text-success" 
+                                                <a class="dropdown-item text-success"
                                                    href="#" onclick="manageService('{{ service.service_name }}', 'start')">
                                                     <i class="fas fa-play"></i> Start
                                                 </a>
@@ -270,13 +270,13 @@
                                         {% endif %}
                                         {% if service.status == 'running' %}
                                             <li>
-                                                <a class="dropdown-item text-warning" 
+                                                <a class="dropdown-item text-warning"
                                                    href="#" onclick="manageService('{{ service.service_name }}', 'stop')">
                                                     <i class="fas fa-stop"></i> Stop
                                                 </a>
                                             </li>
                                             <li>
-                                                <a class="dropdown-item text-info" 
+                                                <a class="dropdown-item text-info"
                                                    href="#" onclick="manageService('{{ service.service_name }}', 'restart')">
                                                     <i class="fas fa-redo"></i> Restart
                                                 </a>
@@ -284,13 +284,13 @@
                                         {% endif %}
                                         <li><hr class="dropdown-divider"></li>
                                         <li>
-                                            <a class="dropdown-item" 
+                                            <a class="dropdown-item"
                                                href="#" onclick="showServiceLogs('{{ service.service_name }}')">
                                                 <i class="fas fa-file-alt"></i> View Logs
                                             </a>
                                         </li>
                                         <li>
-                                            <a class="dropdown-item" 
+                                            <a class="dropdown-item"
                                                href="#" onclick="showServiceDetails('{{ service.service_name }}')">
                                                 <i class="fas fa-info-circle"></i> Details
                                             </a>
@@ -315,7 +315,7 @@
             <div class="resource-chart">
                 <h5><i class="fas fa-chart-bar"></i> Resource Usage by Service</h5>
                 <canvas id="resourceChart" width="400" height="300"></canvas>
-                
+
                 <div class="mt-3">
                     <h6>Top Resource Consumers</h6>
                     <div id="topConsumers">
@@ -333,7 +333,7 @@
                             <div class="status-indicators d-flex gap-1">
                                 <!-- Simulated health indicators for last 24 hours -->
                                 {% for i in "123456789012345678901234" %}
-                                    <div class="status-dot bg-{% if service.status == 'running' %}success{% elif service.status == 'failed' %}danger{% else %}warning{% endif %}" 
+                                    <div class="status-dot bg-{% if service.status == 'running' %}success{% elif service.status == 'failed' %}danger{% else %}warning{% endif %}"
                                          title="Status at {{ i }}:00"></div>
                                 {% endfor %}
                             </div>
@@ -426,12 +426,12 @@ document.addEventListener('DOMContentLoaded', function() {
 function initializeResourceChart() {
     const ctx = document.getElementById('resourceChart').getContext('2d');
     const resourceData = {{ resource_data|safe }};
-    
+
     if (resourceData.length === 0) {
         ctx.fillText('No resource data available', 50, 50);
         return;
     }
-    
+
     resourceChart = new Chart(ctx, {
         type: 'doughnut',
         data: {
@@ -467,15 +467,15 @@ function initializeResourceChart() {
 function updateTopConsumers() {
     const resourceData = {{ resource_data|safe }};
     const container = document.getElementById('topConsumers');
-    
+
     if (resourceData.length === 0) {
         container.innerHTML = '<p class="text-muted">No resource data available</p>';
         return;
     }
-    
+
     // Sort by CPU usage
     const sortedData = resourceData.sort((a, b) => b.cpu - a.cpu).slice(0, 5);
-    
+
     let html = '';
     sortedData.forEach(service => {
         html += `
@@ -488,7 +488,7 @@ function updateTopConsumers() {
             </div>
         `;
     });
-    
+
     container.innerHTML = html;
 }
 
@@ -496,19 +496,19 @@ function manageService(serviceName, action) {
     if (!confirm(`Are you sure you want to ${action} the service "${serviceName}"?`)) {
         return;
     }
-    
+
     // Show loading state
     const button = event.target;
     const originalText = button.innerHTML;
     button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> ' + action.charAt(0).toUpperCase() + action.slice(1) + 'ing...';
     button.disabled = true;
-    
+
     // Simulate service management call
     setTimeout(() => {
         alert(`Service ${serviceName} ${action} command sent successfully.\n\nNote: Actual implementation would make an API call to manage the service.`);
         button.innerHTML = originalText;
         button.disabled = false;
-        
+
         // Refresh the page to update service status
         window.location.reload();
     }, 2000);
@@ -517,10 +517,10 @@ function manageService(serviceName, action) {
 function showServiceDetails(serviceName) {
     const modal = new bootstrap.Modal(document.getElementById('serviceDetailsModal'));
     const content = document.getElementById('serviceDetailsContent');
-    
+
     content.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Loading service details...</div>';
     modal.show();
-    
+
     // Simulate loading service details
     setTimeout(() => {
         content.innerHTML = `
@@ -556,10 +556,10 @@ Group=root
 function showServiceLogs(serviceName) {
     const modal = new bootstrap.Modal(document.getElementById('serviceLogsModal'));
     const content = document.getElementById('serviceLogsContent');
-    
+
     content.innerHTML = '<div class="text-center"><i class="fas fa-spinner fa-spin"></i> Loading service logs...</div>';
     modal.show();
-    
+
     // Simulate loading service logs
     setTimeout(() => {
         const sampleLogs = [
@@ -569,7 +569,7 @@ function showServiceLogs(serviceName) {
             'Jan 15 10:32:15 server ' + serviceName + '[1234]: Processing request from 192.168.1.100',
             'Jan 15 10:35:42 server ' + serviceName + '[1234]: Health check passed',
         ];
-        
+
         content.innerHTML = sampleLogs.map(log => `<div>${log}</div>`).join('');
     }, 1000);
 }
@@ -580,7 +580,7 @@ function refreshServices() {
     const originalText = button.innerHTML;
     button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Refreshing...';
     button.disabled = true;
-    
+
     // Simulate refresh
     setTimeout(() => {
         window.location.reload();
@@ -591,7 +591,7 @@ function startAllServices() {
     if (!confirm('Are you sure you want to start all stopped services?')) {
         return;
     }
-    
+
     alert('Start all services command would be executed here.\n\nThis would start all services that are currently stopped.');
 }
 

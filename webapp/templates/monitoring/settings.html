@@ -95,8 +95,8 @@
 
 .status-indicator.connected { background: #28a745; }
 .status-indicator.disconnected { background: #dc3545; }
-.status-indicator.testing { 
-    background: #ffc107; 
+.status-indicator.testing {
+    background: #ffc107;
     animation: pulse 1s infinite;
 }
 
@@ -145,7 +145,7 @@
         <div class="col-md-8">
             <form method="post" class="settings-card">
                 {% csrf_token %}
-                
+
                 <!-- Quick Configuration -->
                 <div class="quick-config">
                     <h6><i class="fas fa-rocket"></i> Quick Configuration</h6>
@@ -174,7 +174,7 @@
                 <!-- Data Retention -->
                 <div class="settings-section">
                     <h6><i class="fas fa-database"></i> Data Retention Settings</h6>
-                    
+
                     <div class="row">
                         <div class="col-md-6">
                             <label for="{{ form.metric_retention_days.id_for_label }}" class="form-label">
@@ -212,7 +212,7 @@
                 <!-- Collection Settings -->
                 <div class="settings-section">
                     <h6><i class="fas fa-clock"></i> Data Collection Settings</h6>
-                    
+
                     <div class="row">
                         <div class="col-md-6">
                             <label for="{{ form.collection_interval.id_for_label }}" class="form-label">
@@ -257,7 +257,7 @@
                 <!-- Email Notifications -->
                 <div class="settings-section">
                     <h6><i class="fas fa-envelope"></i> Email Notification Settings</h6>
-                    
+
                     <div class="row mb-3">
                         <div class="col-12">
                             <div class="form-check form-switch">
@@ -268,7 +268,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <div id="emailSettings" class="email-settings">
                         <div class="row">
                             <div class="col-md-6">
@@ -296,7 +296,7 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="row mt-3">
                             <div class="col-md-6">
                                 <label for="{{ form.smtp_username.id_for_label }}" class="form-label">SMTP Username</label>
@@ -316,7 +316,7 @@
                                 </div>
                             </div>
                         </div>
-                        
+
                         <div class="row mt-3">
                             <div class="col-md-6">
                                 <label for="{{ form.default_alert_email.id_for_label }}" class="form-label">Default Alert Email</label>
@@ -342,13 +342,13 @@
                 <!-- Advanced Settings -->
                 <div class="settings-section advanced-settings" id="advancedSettings">
                     <h6><i class="fas fa-tools"></i> Advanced Settings</h6>
-                    
+
                     <div class="alert alert-warning">
                         <i class="fas fa-exclamation-triangle"></i>
-                        <strong>Warning:</strong> These settings are for advanced users only. 
+                        <strong>Warning:</strong> These settings are for advanced users only.
                         Incorrect configuration may affect system performance.
                     </div>
-                    
+
                     <div class="row">
                         <div class="col-md-6">
                             <h6>Database Optimization</h6>
@@ -404,7 +404,7 @@
         <div class="col-md-4">
             <div class="settings-card">
                 <h5><i class="fas fa-info-circle"></i> Configuration Summary</h5>
-                
+
                 <div class="mb-3">
                     <h6>Current Status</h6>
                     <div class="d-flex justify-content-between align-items-center mb-2">
@@ -424,7 +424,7 @@
                         <span class="status-indicator {% if settings.network_monitoring_enabled %}connected{% else %}disconnected{% endif %}"></span>
                     </div>
                 </div>
-                
+
                 <div class="mb-3">
                     <h6>Storage Usage</h6>
                     <div class="progress mb-2">
@@ -441,7 +441,7 @@
                         Total: ~600MB / 2GB allocated
                     </small>
                 </div>
-                
+
                 <div class="mb-3">
                     <h6>Recent Activity</h6>
                     <small class="text-muted">
@@ -455,7 +455,7 @@
 
             <div class="settings-card">
                 <h5><i class="fas fa-question-circle"></i> Help & Documentation</h5>
-                
+
                 <div class="accordion" id="helpAccordion">
                     <div class="accordion-item">
                         <h2 class="accordion-header">
@@ -472,7 +472,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="accordion-item">
                         <h2 class="accordion-header">
                             <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collectionHelp">
@@ -488,7 +488,7 @@
                             </div>
                         </div>
                     </div>
-                    
+
                     <div class="accordion-item">
                         <h2 class="accordion-header">
                             <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#emailHelp">
@@ -540,11 +540,11 @@ function setupFormWatchers() {
     if (emailToggle) {
         emailToggle.addEventListener('change', toggleEmailSettings);
     }
-    
+
     // Watch retention sliders
     const metricRetention = document.querySelector('#id_metric_retention_days');
     const logRetention = document.querySelector('#id_log_retention_days');
-    
+
     if (metricRetention) {
         metricRetention.addEventListener('input', updateRetentionDisplays);
     }
@@ -556,13 +556,13 @@ function setupFormWatchers() {
 function toggleEmailSettings() {
     const emailToggle = document.querySelector('#id_email_notifications_enabled');
     const emailSettings = document.querySelector('#emailSettings');
-    
+
     if (emailToggle && emailSettings) {
         const inputs = emailSettings.querySelectorAll('input, select');
         inputs.forEach(input => {
             input.disabled = !emailToggle.checked;
         });
-        
+
         emailSettings.style.opacity = emailToggle.checked ? '1' : '0.5';
     }
 }
@@ -570,16 +570,16 @@ function toggleEmailSettings() {
 function updateRetentionDisplays() {
     const metricDays = document.querySelector('#id_metric_retention_days')?.value || 30;
     const logDays = document.querySelector('#id_log_retention_days')?.value || 7;
-    
+
     // Update displays
     const metricDisplay = document.getElementById('metricRetentionDisplay');
     const logDisplay = document.getElementById('logRetentionDisplay');
     const metricStorage = document.getElementById('metricStorageSize');
     const logStorage = document.getElementById('logStorageSize');
-    
+
     if (metricDisplay) metricDisplay.textContent = metricDays;
     if (logDisplay) logDisplay.textContent = logDays;
-    
+
     // Calculate estimated storage (rough estimates)
     if (metricStorage) metricStorage.textContent = `~${Math.round(metricDays * 15)}`;
     if (logStorage) logStorage.textContent = `~${Math.round(logDays * 15)}`;
@@ -599,7 +599,7 @@ function setQuickConfig(profile) {
                 'email_notifications_enabled': false
             });
             break;
-            
+
         case 'standard':
             setFormValues({
                 'metric_retention_days': 30,
@@ -612,7 +612,7 @@ function setQuickConfig(profile) {
                 'email_notifications_enabled': true
             });
             break;
-            
+
         case 'advanced':
             setFormValues({
                 'metric_retention_days': 90,
@@ -626,10 +626,10 @@ function setQuickConfig(profile) {
             });
             break;
     }
-    
+
     updateRetentionDisplays();
     toggleEmailSettings();
-    
+
     // Show confirmation
     const alertDiv = document.createElement('div');
     alertDiv.className = 'alert alert-success alert-dismissible fade show';
@@ -637,10 +637,10 @@ function setQuickConfig(profile) {
         <i class="fas fa-check"></i> ${profile.charAt(0).toUpperCase() + profile.slice(1)} configuration applied!
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     `;
-    
+
     const form = document.querySelector('form');
     form.insertBefore(alertDiv, form.firstChild);
-    
+
     setTimeout(() => {
         alertDiv.remove();
     }, 3000);
@@ -662,9 +662,9 @@ function setFormValues(values) {
 function toggleAdvancedSettings() {
     const advancedDiv = document.getElementById('advancedSettings');
     const button = event.target;
-    
+
     advancedDiv.classList.toggle('show');
-    
+
     if (advancedDiv.classList.contains('show')) {
         button.innerHTML = '<i class="fas fa-tools"></i> Hide Advanced';
     } else {
@@ -676,20 +676,20 @@ function testEmailSettings() {
     const button = event.target;
     const indicator = button.querySelector('.status-indicator');
     const originalText = button.innerHTML;
-    
+
     // Show testing state
     indicator.className = 'status-indicator testing';
     button.innerHTML = '<span class="status-indicator testing"></span> Testing...';
     button.disabled = true;
-    
+
     // Simulate email test
     setTimeout(() => {
         const success = Math.random() > 0.3; // 70% success rate for demo
-        
+
         if (success) {
             indicator.className = 'status-indicator connected';
             button.innerHTML = '<span class="status-indicator connected"></span> Test Successful!';
-            
+
             setTimeout(() => {
                 button.innerHTML = originalText;
                 button.disabled = false;
@@ -697,12 +697,12 @@ function testEmailSettings() {
         } else {
             indicator.className = 'status-indicator disconnected';
             button.innerHTML = '<span class="status-indicator disconnected"></span> Test Failed';
-            
+
             setTimeout(() => {
                 button.innerHTML = originalText;
                 button.disabled = false;
             }, 3000);
-            
+
             alert('Email test failed. Please check your SMTP settings:\n\n• Verify host and port\n• Check username/password\n• Ensure TLS setting is correct');
         }
     }, 2000);
@@ -711,11 +711,11 @@ function testEmailSettings() {
 function previewChanges() {
     const modal = new bootstrap.Modal(document.getElementById('configPreviewModal'));
     const content = document.getElementById('configPreviewContent');
-    
+
     // Gather current form values
     const formData = new FormData(document.querySelector('form'));
     let configText = '';
-    
+
     configText += '[Monitoring Configuration]\n';
     configText += `metric_retention_days = ${formData.get('metric_retention_days') || 30}\n`;
     configText += `log_retention_days = ${formData.get('log_retention_days') || 7}\n`;
@@ -726,7 +726,7 @@ function previewChanges() {
     configText += `network_monitoring = ${formData.get('network_monitoring_enabled') ? 'true' : 'false'}\n`;
     configText += `connection_monitoring = ${formData.get('connection_monitoring_enabled') ? 'true' : 'false'}\n`;
     configText += `log_aggregation = ${formData.get('log_aggregation_enabled') ? 'true' : 'false'}\n`;
-    
+
     if (formData.get('email_notifications_enabled')) {
         configText += '\n[SMTP Configuration]\n';
         configText += `smtp_host = ${formData.get('smtp_host') || 'Not set'}\n`;
@@ -735,7 +735,7 @@ function previewChanges() {
         configText += `smtp_use_tls = ${formData.get('smtp_use_tls') ? 'true' : 'false'}\n`;
         configText += `default_alert_email = ${formData.get('default_alert_email') || 'Not set'}\n`;
     }
-    
+
     content.textContent = configText;
     modal.show();
 }
@@ -764,26 +764,26 @@ function exportConfig() {
             default_alert_email: formData.get('default_alert_email') || ''
         } : null
     };
-    
+
     const configJSON = JSON.stringify(config, null, 2);
     const blob = new Blob([configJSON], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
-    
+
     const link = document.createElement('a');
     link.href = url;
     link.download = `monitoring_config_${new Date().toISOString().split('T')[0]}.json`;
     link.click();
-    
+
     URL.revokeObjectURL(url);
 }
 
 function testConfiguration() {
     const button = event.target;
     const originalText = button.innerHTML;
-    
+
     button.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Testing...';
     button.disabled = true;
-    
+
     // Simulate configuration test
     setTimeout(() => {
         const results = {
@@ -792,18 +792,18 @@ function testConfiguration() {
             monitoring: Math.random() > 0.05,
             permissions: Math.random() > 0.1
         };
-        
+
         let message = 'Configuration Test Results:\n\n';
         message += `✓ Database Connection: ${results.database ? 'PASS' : 'FAIL'}\n`;
         message += `✓ Email Settings: ${results.email ? 'PASS' : 'FAIL'}\n`;
         message += `✓ Monitoring Services: ${results.monitoring ? 'PASS' : 'FAIL'}\n`;
         message += `✓ File Permissions: ${results.permissions ? 'PASS' : 'FAIL'}\n`;
-        
+
         const allPassed = Object.values(results).every(r => r);
         message += `\nOverall Status: ${allPassed ? 'ALL TESTS PASSED' : 'SOME TESTS FAILED'}`;
-        
+
         alert(message);
-        
+
         button.innerHTML = originalText;
         button.disabled = false;
     }, 3000);
@@ -813,7 +813,7 @@ function resetToDefaults() {
     if (!confirm('Are you sure you want to reset all settings to their default values? This action cannot be undone.')) {
         return;
     }
-    
+
     // Reset all form values to defaults
     setFormValues({
         'metric_retention_days': 30,
@@ -831,10 +831,10 @@ function resetToDefaults() {
         'smtp_use_tls': true,
         'default_alert_email': ''
     });
-    
+
     updateRetentionDisplays();
     toggleEmailSettings();
-    
+
     // Show success message
     const alertDiv = document.createElement('div');
     alertDiv.className = 'alert alert-info alert-dismissible fade show';
@@ -842,10 +842,10 @@ function resetToDefaults() {
         <i class="fas fa-info-circle"></i> Settings have been reset to default values.
         <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
     `;
-    
+
     const form = document.querySelector('form');
     form.insertBefore(alertDiv, form.firstChild);
-    
+
     setTimeout(() => {
         alertDiv.remove();
     }, 5000);

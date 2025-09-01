@@ -142,7 +142,7 @@
             </form>
         </div>
     </div>
-    
+
     <!-- Main Metrics Row -->
     <div class="row mb-4">
         <div class="col-md-3">
@@ -394,7 +394,7 @@ function initializeChart() {
             }
         }
     });
-    
+
     loadMetricData(currentMetric);
 }
 
@@ -404,7 +404,7 @@ function setupMetricButtons() {
             // Update active button
             document.querySelectorAll('[data-metric]').forEach(b => b.classList.remove('active'));
             this.classList.add('active');
-            
+
             // Load new metric data
             currentMetric = this.dataset.metric;
             loadMetricData(currentMetric);
@@ -426,24 +426,24 @@ function updateChart(data, metricType) {
         const date = new Date(d.timestamp);
         return date.toLocaleTimeString();
     });
-    
+
     const values = data.map(d => d.value);
-    
+
     performanceChart.data.labels = labels;
     performanceChart.data.datasets[0].data = values;
     performanceChart.data.datasets[0].label = metricType.toUpperCase() + ' Usage';
-    
+
     // Update colors based on metric type
     const colors = {
         'cpu': 'rgb(102, 126, 234)',
-        'memory': 'rgb(245, 87, 108)', 
+        'memory': 'rgb(245, 87, 108)',
         'network_rx_bytes': 'rgb(67, 233, 123)'
     };
-    
+
     const color = colors[metricType] || 'rgb(75, 192, 192)';
     performanceChart.data.datasets[0].borderColor = color;
     performanceChart.data.datasets[0].backgroundColor = color.replace('rgb', 'rgba').replace(')', ', 0.1)');
-    
+
     performanceChart.update();
 }
 

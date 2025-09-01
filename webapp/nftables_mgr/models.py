@@ -5,6 +5,8 @@ nftables management models
 from django.contrib.auth.models import User
 from django.db import models
 from django.utils import timezone
+from django.db.models.signals import post_save, post_delete
+from django.dispatch import receiver
 
 
 class NFTableRule(models.Model):
@@ -55,3 +57,40 @@ class PortForward(models.Model):
     class Meta:
         unique_together = ["external_port", "protocol"]
         ordering = ["external_port"]
+
+
+# Signal handlers to automatically apply network configuration changes
+@receiver(post_save, sender=NFTableRule)
+@receiver(post_save, sender=PortForward)
+def apply_network_config_on_save(sender, instance, **kwargs):
+    """Apply network configuration when NFTableRule or PortForward is saved"""
+    try:
+        from network.nftables_config import NFTablesConfigManager
+        nft_manager = NFTablesConfigManager()
+        success, message = nft_manager.apply_network_changes()
+        if not success:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Failed to apply network config after {sender.__name__} save: {message}")
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Exception applying network config after {sender.__name__} save: {e}")
+
+
+@receiver(post_delete, sender=NFTableRule)
+@receiver(post_delete, sender=PortForward)
+def apply_network_config_on_delete(sender, instance, **kwargs):
+    """Apply network configuration when NFTableRule or PortForward is deleted"""
+    try:
+        from network.nftables_config import NFTablesConfigManager
+        nft_manager = NFTablesConfigManager()
+        success, message = nft_manager.apply_network_changes()
+        if not success:
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Failed to apply network config after {sender.__name__} delete: {message}")
+    except Exception as e:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.error(f"Exception applying network config after {sender.__name__} delete: {e}")

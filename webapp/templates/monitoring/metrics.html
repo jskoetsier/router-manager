@@ -277,7 +277,7 @@
                 <h6><i class="fas fa-list"></i> Available Sources</h6>
                 <div id="sourcesList">
                     {% for src in available_sources %}
-                        <div class="source-item {% if src == source %}active{% endif %}" 
+                        <div class="source-item {% if src == source %}active{% endif %}"
                              onclick="selectSource('{{ src }}')">
                             <strong>{{ src|default:"System" }}</strong>
                             <br>
@@ -299,21 +299,21 @@
                         <p><strong>Last Update:</strong> {{ latest_metric.timestamp|timesince }} ago</p>
                     {% endif %}
                 </div>
-                
+
                 <hr>
-                
+
                 <h6><i class="fas fa-bell"></i> Quick Alerts</h6>
                 <form method="post" action="{% url 'monitoring:alert_create' %}">
                     {% csrf_token %}
                     <input type="hidden" name="metric_type" value="{{ metric_type }}">
                     <input type="hidden" name="source" value="{{ source }}">
-                    
+
                     <div class="mb-3">
                         <label class="form-label">Alert when above:</label>
-                        <input type="number" class="form-control form-control-sm" 
+                        <input type="number" class="form-control form-control-sm"
                                name="threshold_value" step="0.1" placeholder="e.g., 80">
                     </div>
-                    
+
                     <div class="mb-3">
                         <select name="severity" class="form-select form-select-sm">
                             <option value="warning">Warning</option>
@@ -321,7 +321,7 @@
                             <option value="critical">Critical</option>
                         </select>
                     </div>
-                    
+
                     <button type="submit" class="btn btn-warning btn-sm w-100">
                         <i class="fas fa-plus"></i> Create Alert
                     </button>
@@ -344,7 +344,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function initializeChart() {
     const ctx = document.getElementById('metricsChart').getContext('2d');
-    
+
     const chartData = currentData.map(item => ({
         x: new Date(item.timestamp),
         y: item.value
@@ -433,7 +433,7 @@ function setupTimeButtons() {
         btn.addEventListener('click', function() {
             document.querySelectorAll('.time-btn').forEach(b => b.classList.remove('active'));
             this.classList.add('active');
-            
+
             const minutes = this.dataset.minutes;
             loadRealtimeData(minutes);
         });
@@ -442,10 +442,10 @@ function setupTimeButtons() {
 
 function loadRealtimeData(minutes) {
     showLoading(true);
-    
+
     const metricType = document.getElementById('metric_type').value;
     const source = document.getElementById('source').value;
-    
+
     fetch(`{% url 'monitoring:api_metrics_data' %}?type=${metricType}&source=${source}&minutes=${minutes}`)
         .then(response => response.json())
         .then(data => {
@@ -463,10 +463,10 @@ function updateChart(data) {
         x: new Date(item.timestamp),
         y: item.value
     }));
-    
+
     metricsChart.data.datasets[0].data = chartData;
     metricsChart.update();
-    
+
     currentData = data;
     updateInsights();
 }
@@ -478,14 +478,14 @@ function showLoading(show) {
 
 function updateAvailableSources() {
     const metricType = document.getElementById('metric_type').value;
-    
+
     // Make AJAX request to get sources for this metric type
     fetch(`/monitoring/api/sources/?metric_type=${metricType}`)
         .then(response => response.json())
         .then(data => {
             const sourceSelect = document.getElementById('source');
             sourceSelect.innerHTML = '<option value="">All Sources</option>';
-            
+
             data.sources.forEach(source => {
                 const option = document.createElement('option');
                 option.value = source;
@@ -504,7 +504,7 @@ function selectSource(source) {
 function toggleDrillDown() {
     const panel = document.getElementById('drillDownPanel');
     const isVisible = panel.style.display === 'block';
-    
+
     if (!isVisible) {
         panel.style.display = 'block';
         initializeDrillDownCharts();
@@ -517,7 +517,7 @@ function initializeDrillDownCharts() {
     // Initialize drill-down charts for detailed analysis
     const ctx1 = document.getElementById('drillDownChart1').getContext('2d');
     const ctx2 = document.getElementById('drillDownChart2').getContext('2d');
-    
+
     // Chart 1: Moving average
     drillDownChart1 = new Chart(ctx1, {
         type: 'line',
@@ -539,7 +539,7 @@ function initializeDrillDownCharts() {
             }
         }
     });
-    
+
     // Chart 2: Rate of change
     drillDownChart2 = new Chart(ctx2, {
         type: 'bar',
@@ -590,17 +590,17 @@ function generateInsight(value, metricType) {
 
 function updateInsights() {
     if (currentData.length === 0) return;
-    
+
     const values = currentData.map(d => d.value);
     const avg = values.reduce((a, b) => a + b, 0) / values.length;
     const trend = values[values.length - 1] > values[0] ? 'increasing' : 'decreasing';
-    
+
     const insightsHtml = `
         <div class="alert alert-info">
             <strong>Trend Analysis:</strong> The metric is ${trend} with an average of ${avg.toFixed(2)}.
         </div>
     `;
-    
+
     const container = document.getElementById('insightsContainer');
     if (container) {
         container.innerHTML = insightsHtml;

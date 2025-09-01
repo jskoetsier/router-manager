@@ -20,12 +20,12 @@ class MetricDataAdmin(admin.ModelAdmin):
     date_hierarchy = 'timestamp'
     ordering = ['-timestamp']
     readonly_fields = ['timestamp']
-    
+
     def get_queryset(self, request):
         # Limit to recent data to avoid performance issues
         from datetime import datetime, timedelta
         from django.utils import timezone
-        
+
         qs = super().get_queryset(request)
         cutoff = timezone.now() - timedelta(days=7)
         return qs.filter(timestamp__gte=cutoff)
@@ -34,14 +34,14 @@ class MetricDataAdmin(admin.ModelAdmin):
 @admin.register(Alert)
 class AlertAdmin(admin.ModelAdmin):
     list_display = [
-        'name', 'metric_type', 'severity', 'enabled', 
+        'name', 'metric_type', 'severity', 'enabled',
         'threshold_display', 'last_triggered', 'created_by'
     ]
     list_filter = ['severity', 'alert_type', 'enabled', 'metric_type']
     search_fields = ['name', 'metric_type']
     readonly_fields = ['created_at', 'last_checked', 'last_triggered']
     filter_horizontal = []
-    
+
     fieldsets = (
         ('Basic Information', {
             'fields': ('name', 'alert_type', 'severity', 'enabled')
@@ -57,11 +57,11 @@ class AlertAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         })
     )
-    
+
     def threshold_display(self, obj):
         return f"{obj.comparison_operator} {obj.threshold_value}"
     threshold_display.short_description = "Threshold"
-    
+
     def save_model(self, request, obj, form, change):
         if not obj.pk:
             obj.created_by = request.user
@@ -85,11 +85,11 @@ class AlertInstanceAdmin(admin.ModelAdmin):
     search_fields = ['alert__name', 'message']
     date_hierarchy = 'triggered_at'
     readonly_fields = ['triggered_at', 'notification_sent']
-    
+
     def severity_display(self, obj):
         colors = {
             'info': '#17a2b8',
-            'warning': '#ffc107', 
+            'warning': '#ffc107',
             'error': '#fd7e14',
             'critical': '#dc3545'
         }
@@ -105,13 +105,13 @@ class AlertInstanceAdmin(admin.ModelAdmin):
 @admin.register(ServiceStatus)
 class ServiceStatusAdmin(admin.ModelAdmin):
     list_display = [
-        'service_name', 'display_name', 'status_display', 
+        'service_name', 'display_name', 'status_display',
         'uptime_display', 'cpu_percent', 'memory_mb', 'last_checked'
     ]
     list_filter = ['status', 'last_checked']
     search_fields = ['service_name', 'display_name']
     readonly_fields = ['last_checked']
-    
+
     def status_display(self, obj):
         colors = {
             'running': '#28a745',
@@ -126,7 +126,7 @@ class ServiceStatusAdmin(admin.ModelAdmin):
             obj.status.upper()
         )
     status_display.short_description = "Status"
-    
+
     def uptime_display(self, obj):
         if obj.uptime_seconds > 0:
             hours = obj.uptime_seconds // 3600
@@ -139,7 +139,7 @@ class ServiceStatusAdmin(admin.ModelAdmin):
 @admin.register(NetworkInterface)
 class NetworkInterfaceAdmin(admin.ModelAdmin):
     list_display = [
-        'interface_name', 'display_name', 'ip_address', 
+        'interface_name', 'display_name', 'ip_address',
         'is_active', 'speed_mbps', 'monitor_enabled', 'last_updated'
     ]
     list_filter = ['is_active', 'monitor_enabled', 'last_updated']
@@ -150,29 +150,29 @@ class NetworkInterfaceAdmin(admin.ModelAdmin):
 @admin.register(ConnectionMonitor)
 class ConnectionMonitorAdmin(admin.ModelAdmin):
     list_display = [
-        'protocol', 'local_endpoint', 'remote_endpoint', 
+        'protocol', 'local_endpoint', 'remote_endpoint',
         'state', 'process_name', 'timestamp'
     ]
     list_filter = ['protocol', 'state', 'timestamp']
     search_fields = ['local_address', 'remote_address', 'process_name']
     date_hierarchy = 'timestamp'
     readonly_fields = ['timestamp']
-    
+
     def local_endpoint(self, obj):
         return f"{obj.local_address}:{obj.local_port}"
     local_endpoint.short_description = "Local"
-    
+
     def remote_endpoint(self, obj):
         if obj.remote_address and obj.remote_port:
             return f"{obj.remote_address}:{obj.remote_port}"
         return "N/A"
     remote_endpoint.short_description = "Remote"
-    
+
     def get_queryset(self, request):
         # Limit to recent data to avoid performance issues
         from datetime import datetime, timedelta
         from django.utils import timezone
-        
+
         qs = super().get_queryset(request)
         cutoff = timezone.now() - timedelta(hours=1)
         return qs.filter(timestamp__gte=cutoff)
@@ -181,14 +181,14 @@ class ConnectionMonitorAdmin(admin.ModelAdmin):
 @admin.register(SystemLog)
 class SystemLogAdmin(admin.ModelAdmin):
     list_display = [
-        'timestamp', 'level_display', 'source', 'process', 
+        'timestamp', 'level_display', 'source', 'process',
         'message_preview', 'hostname'
     ]
     list_filter = ['level', 'source', 'timestamp', 'facility']
     search_fields = ['message', 'process', 'hostname']
     date_hierarchy = 'timestamp'
     readonly_fields = ['timestamp']
-    
+
     def level_display(self, obj):
         colors = {
             'DEBUG': '#6c757d',
@@ -204,16 +204,16 @@ class SystemLogAdmin(admin.ModelAdmin):
             obj.level
         )
     level_display.short_description = "Level"
-    
+
     def message_preview(self, obj):
         return obj.message[:100] + "..." if len(obj.message) > 100 else obj.message
     message_preview.short_description = "Message"
-    
+
     def get_queryset(self, request):
         # Limit to recent data to avoid performance issues
         from datetime import datetime, timedelta
         from django.utils import timezone
-        
+
         qs = super().get_queryset(request)
         cutoff = timezone.now() - timedelta(days=2)
         return qs.filter(timestamp__gte=cutoff)
@@ -226,7 +226,7 @@ class MonitoringSettingsAdmin(admin.ModelAdmin):
         'email_notifications_enabled', 'updated_at'
     ]
     readonly_fields = ['updated_at']
-    
+
     fieldsets = (
         ('Data Retention', {
             'fields': ('metric_retention_days', 'log_retention_days')
@@ -250,11 +250,11 @@ class MonitoringSettingsAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         })
     )
-    
+
     def has_add_permission(self, request):
         # Only allow one settings instance
         return not MonitoringSettings.objects.exists()
-    
+
     def has_delete_permission(self, request, obj=None):
         # Prevent deletion of settings
         return False

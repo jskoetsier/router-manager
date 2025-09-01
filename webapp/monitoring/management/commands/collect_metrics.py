@@ -35,26 +35,26 @@ class Command(BaseCommand):
 
         try:
             monitor = SystemMonitor()
-            
+
             # Collect system metrics
             self.stdout.write('Collecting system metrics...')
             monitor.collect_all_metrics()
-            
+
             # Collect system logs
             self.stdout.write('Collecting system logs...')
             collect_system_logs()
-            
+
             # Clean up old data
             self.stdout.write('Cleaning up old data...')
             monitor.cleanup_old_data()
-            
+
             if options['verbose']:
                 self.stdout.write(
                     self.style.SUCCESS(
                         f'Metric collection completed at {timezone.now()}'
                     )
                 )
-                
+
         except Exception as e:
             self.stdout.write(
                 self.style.ERROR(f'Error during metric collection: {e}')

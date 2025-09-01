@@ -11,7 +11,7 @@ from datetime import datetime, timedelta
 from django.utils import timezone
 from django.conf import settings
 from .models import (
-    MetricData, ServiceStatus, NetworkInterface, 
+    MetricData, ServiceStatus, NetworkInterface,
     ConnectionMonitor, SystemLog, Alert, AlertInstance
 )
 import logging
@@ -52,7 +52,7 @@ class SystemMonitor:
         try:
             cpu_percent = psutil.cpu_percent(interval=1)
             cpu_count = psutil.cpu_count()
-            
+
             MetricData.objects.create(
                 metric_type='cpu',
                 value=cpu_percent,
@@ -77,7 +77,7 @@ class SystemMonitor:
         try:
             memory = psutil.virtual_memory()
             swap = psutil.swap_memory()
-            
+
             MetricData.objects.create(
                 metric_type='memory',
                 value=memory.percent,
@@ -111,7 +111,7 @@ class SystemMonitor:
             for partition in partitions:
                 try:
                     usage = psutil.disk_usage(partition.mountpoint)
-                    
+
                     MetricData.objects.create(
                         metric_type='disk',
                         value=(usage.used / usage.total) * 100,
@@ -211,11 +211,11 @@ class SystemMonitor:
                     if len(recent_metrics) == 2:
                         bytes_diff = recent_metrics[0].value - recent_metrics[1].value
                         time_diff = (recent_metrics[0].timestamp - recent_metrics[1].timestamp).total_seconds()
-                        
+
                         if time_diff > 0:
                             mbps = (bytes_diff * 8) / (time_diff * 1024 * 1024)
                             utilization = (mbps / interface_obj.speed_mbps) * 100
-                            
+
                             MetricData.objects.create(
                                 metric_type='bandwidth_utilization',
                                 value=utilization,
@@ -256,7 +256,7 @@ class SystemMonitor:
         """Collect system load metrics"""
         try:
             load_avg = os.getloadavg()
-            
+
             MetricData.objects.create(
                 metric_type='load_1min',
                 value=load_avg[0],
@@ -285,7 +285,7 @@ class SystemMonitor:
         try:
             processes = psutil.pids()
             running_processes = 0
-            
+
             for pid in processes:
                 try:
                     p = psutil.Process(pid)
@@ -315,7 +315,7 @@ class SystemMonitor:
         try:
             connections = psutil.net_connections()
             active_connections = len([c for c in connections if c.status == 'ESTABLISHED'])
-            
+
             MetricData.objects.create(
                 metric_type='connections_active',
                 value=len(connections),
@@ -332,12 +332,12 @@ class SystemMonitor:
 
             # Store detailed connection info (limited to prevent DB bloat)
             ConnectionMonitor.objects.all().delete()  # Clear old data
-            
+
             for conn in connections[:100]:  # Limit to 100 most recent
                 try:
                     process_name = ""
                     process_id = conn.pid
-                    
+
                     if conn.pid:
                         try:
                             process = psutil.Process(conn.pid)
@@ -393,9 +393,9 @@ class SystemMonitor:
                         text=True,
                         timeout=5
                     )
-                    
+
                     status = 'running' if result.stdout.strip() == 'active' else 'stopped'
-                    
+
                     # Get service uptime
                     uptime_seconds = 0
                     try:
@@ -405,7 +405,7 @@ class SystemMonitor:
                             text=True,
                             timeout=5
                         )
-                        
+
                         if uptime_result.returncode == 0:
                             timestamp_line = uptime_result.stdout.strip()
                             if '=' in timestamp_line:
@@ -424,7 +424,7 @@ class SystemMonitor:
                     cpu_percent = 0
                     memory_percent = 0
                     memory_mb = 0
-                    
+
                     if status == 'running':
                         try:
                             # Find process by service name
@@ -446,7 +446,7 @@ class SystemMonitor:
                         service_name=service_name,
                         defaults={'display_name': service_name.replace('-', ' ').title()}
                     )
-                    
+
                     service_obj.status = status
                     service_obj.last_checked = timezone.now()
                     service_obj.uptime_seconds = uptime_seconds
@@ -466,7 +466,7 @@ class SystemMonitor:
         """Check all active alerts against current metrics"""
         try:
             alerts = Alert.objects.filter(enabled=True)
-            
+
             for alert in alerts:
                 try:
                     # Get latest metric value
@@ -536,20 +536,20 @@ class SystemMonitor:
         try:
             from .models import MonitoringSettings
             settings = MonitoringSettings.get_settings()
-            
+
             # Clean up old metrics
             cutoff_date = timezone.now() - timedelta(days=settings.metric_retention_days)
             MetricData.objects.filter(timestamp__lt=cutoff_date).delete()
-            
+
             # Clean up old logs
             log_cutoff_date = timezone.now() - timedelta(days=settings.log_retention_days)
             SystemLog.objects.filter(timestamp__lt=log_cutoff_date).delete()
-            
+
             # Clean up old connections (keep only recent ones)
             ConnectionMonitor.objects.filter(
                 timestamp__lt=timezone.now() - timedelta(hours=1)
             ).delete()
-            
+
             logger.info("Data cleanup completed successfully")
         except Exception as e:
             logger.error(f"Error during data cleanup: {e}")
@@ -565,7 +565,7 @@ def collect_system_logs():
             '/var/log/auth.log',
             '/var/log/daemon.log'
         ]
-        
+
         for log_file in log_files:
             if os.path.exists(log_file):
                 try:
@@ -576,15 +576,15 @@ def collect_system_logs():
                         text=True,
                         timeout=10
                     )
-                    
+
                     if result.returncode == 0:
                         parse_syslog_entries(result.stdout, os.path.basename(log_file))
-                        
+
                 except subprocess.TimeoutExpired:
                     logger.warning(f"Timeout reading log file {log_file}")
                 except Exception as e:
                     logger.error(f"Error reading log file {log_file}: {e}")
-                    
+
     except Exception as e:
         logger.error(f"Error collecting system logs: {e}")
 
@@ -593,18 +593,18 @@ def parse_syslog_entries(log_content, source):
     """Parse syslog entries and store them"""
     try:
         lines = log_content.strip().split('\n')
-        
+
         for line in lines:
             if not line.strip():
                 continue
-                
+
             try:
                 # Basic syslog parsing
                 # Format: timestamp hostname process[pid]: message
                 parts = line.split(' ', 5)
                 if len(parts) < 6:
                     continue
-                    
+
                 # Extract timestamp (assuming current year)
                 timestamp_str = f"{datetime.now().year} {parts[0]} {parts[1]} {parts[2]}"
                 try:
@@ -612,14 +612,14 @@ def parse_syslog_entries(log_content, source):
                     timestamp = timezone.make_aware(timestamp)
                 except:
                     timestamp = timezone.now()
-                
+
                 hostname = parts[3]
                 process_info = parts[4] if len(parts) > 4 else ""
                 message = parts[5] if len(parts) > 5 else line
-                
+
                 # Extract process name and determine log level
                 process_name = process_info.split('[')[0] if '[' in process_info else process_info
-                
+
                 # Determine log level from message content
                 message_lower = message.lower()
                 if any(word in message_lower for word in ['error', 'failed', 'fail']):
@@ -630,7 +630,7 @@ def parse_syslog_entries(log_content, source):
                     level = 'INFO'
                 else:
                     level = 'INFO'
-                
+
                 # Determine source category
                 if 'kernel' in process_name:
                     log_source = 'kernel'
@@ -644,7 +644,7 @@ def parse_syslog_entries(log_content, source):
                     log_source = 'vpn'
                 else:
                     log_source = 'system'
-                
+
                 # Store log entry (avoid duplicates)
                 SystemLog.objects.get_or_create(
                     source=log_source,
@@ -657,9 +657,9 @@ def parse_syslog_entries(log_content, source):
                         'facility': source
                     }
                 )
-                
+
             except Exception as e:
                 continue  # Skip malformed entries
-                
+
     except Exception as e:
         logger.error(f"Error parsing syslog entries: {e}")

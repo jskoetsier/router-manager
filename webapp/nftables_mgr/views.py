@@ -55,7 +55,7 @@ def add_rule(request):
             # Apply network configuration changes
             nft_manager = NFTablesConfigManager()
             success, message = nft_manager.apply_network_changes()
-            
+
             if success:
                 messages.success(request, f'Firewall rule "{rule.name}" created and applied successfully!')
             else:
@@ -97,7 +97,7 @@ def add_port_forward(request):
             # Apply network configuration changes
             nft_manager = NFTablesConfigManager()
             success, message = nft_manager.apply_network_changes()
-            
+
             if success:
                 messages.success(request, f'Port forward rule "{port_forward.name}" created and applied successfully!')
             else:

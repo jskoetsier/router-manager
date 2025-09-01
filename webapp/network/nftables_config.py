@@ -134,7 +134,7 @@ table inet nat {
                 protocols = [pf.protocol.lower()]
             
             for proto in protocols:
-                dnat_rule = f"        {proto} dport {pf.external_port} dnat to {pf.internal_ip}:{pf.internal_port}"
+                dnat_rule = f"        {proto} dport {pf.external_port} dnat ip to {pf.internal_ip}:{pf.internal_port}"
                 rules.append(dnat_rule)
         
         return '\n'.join(rules) if rules else "        # No DNAT rules"

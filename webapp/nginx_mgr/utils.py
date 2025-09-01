@@ -24,30 +24,46 @@ class NginxManager:
         try:
             # Generate nginx configuration
             config_content = self._generate_config(proxy_config)
-
-            # Write configuration file
+            
+            # Write configuration file using sudo
             config_filename = f"{proxy_config.name}.conf"
             config_path = os.path.join(self.nginx_config_dir, config_filename)
-
-            with open(config_path, 'w') as f:
-                f.write(config_content)
-
-            # Enable the site by creating symlink
+            
+            # Use sudo tee to write the file with elevated privileges
+            process = subprocess.run(
+                ['sudo', 'tee', config_path],
+                input=config_content,
+                text=True,
+                capture_output=True,
+                timeout=30
+            )
+            
+            if process.returncode != 0:
+                return False, f"Failed to write configuration file: {process.stderr}"
+            
+            # Enable the site by creating symlink using sudo
             enabled_path = os.path.join(self.nginx_enabled_dir, config_filename)
             if not os.path.exists(enabled_path):
-                os.symlink(config_path, enabled_path)
-
+                result = subprocess.run(
+                    ['sudo', 'ln', '-sf', config_path, enabled_path],
+                    capture_output=True,
+                    text=True,
+                    timeout=30
+                )
+                if result.returncode != 0:
+                    return False, f"Failed to create symlink: {result.stderr}"
+            
             # Test nginx configuration
             if not self.test_config():
                 return False, "Nginx configuration test failed"
-
+            
             # Reload nginx
             if not self.reload():
                 return False, "Failed to reload nginx"
-
+            
             logger.info(f"Deployed nginx configuration for {proxy_config.name}")
             return True, f"Successfully deployed configuration for {proxy_config.domain_name}"
-
+            
         except Exception as e:
             logger.error(f"Failed to deploy nginx config for {proxy_config.name}: {e}")
             return False, str(e)
@@ -57,15 +73,29 @@ class NginxManager:
         try:
             config_filename = f"{proxy_config.name}.conf"
 
-            # Remove enabled symlink
+            # Remove enabled symlink using sudo
             enabled_path = os.path.join(self.nginx_enabled_dir, config_filename)
             if os.path.exists(enabled_path):
-                os.remove(enabled_path)
+                result = subprocess.run(
+                    ['sudo', 'rm', enabled_path],
+                    capture_output=True,
+                    text=True,
+                    timeout=30
+                )
+                if result.returncode != 0:
+                    return False, f"Failed to remove symlink: {result.stderr}"
 
-            # Remove configuration file
+            # Remove configuration file using sudo
             config_path = os.path.join(self.nginx_config_dir, config_filename)
             if os.path.exists(config_path):
-                os.remove(config_path)
+                result = subprocess.run(
+                    ['sudo', 'rm', config_path],
+                    capture_output=True,
+                    text=True,
+                    timeout=30
+                )
+                if result.returncode != 0:
+                    return False, f"Failed to remove config file: {result.stderr}"
 
             # Reload nginx
             self.reload()
@@ -91,7 +121,7 @@ class NginxManager:
         """Test nginx configuration"""
         try:
             result = subprocess.run(
-                [self.nginx_binary, '-t'],
+                ['sudo', self.nginx_binary, '-t'],
                 capture_output=True,
                 text=True,
                 timeout=30
@@ -105,7 +135,7 @@ class NginxManager:
         """Reload nginx configuration"""
         try:
             result = subprocess.run(
-                [self.systemctl_binary, 'reload', 'nginx'],
+                ['sudo', self.systemctl_binary, 'reload', 'nginx'],
                 capture_output=True,
                 text=True,
                 timeout=30
@@ -184,12 +214,12 @@ class CertbotManager:
         try:
             domain = proxy_config.domain_name
 
-            # Ensure webroot directory exists
-            os.makedirs(self.webroot_path, exist_ok=True)
+            # Ensure webroot directory exists using sudo
+            subprocess.run(['sudo', 'mkdir', '-p', self.webroot_path], check=True)
 
-            # Run certbot to obtain certificate
+            # Run certbot to obtain certificate using sudo
             cmd = [
-                self.certbot_binary,
+                'sudo', self.certbot_binary,
                 'certonly',
                 '--webroot',
                 '--webroot-path', self.webroot_path,
@@ -230,7 +260,7 @@ class CertbotManager:
             domain = proxy_config.domain_name
 
             cmd = [
-                self.certbot_binary,
+                'sudo', self.certbot_binary,
                 'renew',
                 '--cert-name', domain,
                 '--non-interactive'

@@ -144,14 +144,45 @@ table inet nat {
         rules = []
         
         for rule in NFTableRule.objects.filter(enabled=True):
-            comment = f"        # {rule.rule_name}"
+            comment = f"        # {rule.name}"
             rules.append(comment)
             
-            # Parse and format the rule
-            formatted_rule = self._format_nftable_rule(rule.rule)
-            rules.append(f"        {formatted_rule}")
+            # Generate nftables rule from NFTableRule model fields
+            nft_rule = self._build_nftables_rule_from_model(rule)
+            rules.append(f"        {nft_rule}")
         
         return '\n'.join(rules) if rules else "        # No custom firewall rules"
+
+    def _build_nftables_rule_from_model(self, rule):
+        """Build nftables rule from NFTableRule model fields"""
+        rule_parts = []
+        
+        # Protocol
+        if rule.protocol and rule.protocol != 'all':
+            rule_parts.append(rule.protocol)
+        
+        # Source IP
+        if rule.source_ip:
+            rule_parts.append(f"ip saddr {rule.source_ip}")
+        
+        # Source port
+        if rule.source_port:
+            if rule.protocol and rule.protocol in ['tcp', 'udp']:
+                rule_parts.append(f"{rule.protocol} sport {rule.source_port}")
+        
+        # Destination IP
+        if rule.destination_ip:
+            rule_parts.append(f"ip daddr {rule.destination_ip}")
+        
+        # Destination port
+        if rule.destination_port:
+            if rule.protocol and rule.protocol in ['tcp', 'udp']:
+                rule_parts.append(f"{rule.protocol} dport {rule.destination_port}")
+        
+        # Action
+        rule_parts.append(rule.action)
+        
+        return ' '.join(rule_parts)
 
     def _format_nftable_rule(self, rule_text):
         """Format a raw nftables rule for insertion"""
@@ -317,10 +348,13 @@ table inet nat {
         # Firewall rules
         for rule in NFTableRule.objects.all():
             summary['firewall_rules'].append({
-                'name': rule.rule_name,
-                'rule': rule.rule,
-                'table': rule.table_name,
-                'chain': rule.chain_name,
+                'name': rule.name,
+                'protocol': rule.protocol,
+                'source_ip': rule.source_ip,
+                'source_port': rule.source_port,
+                'destination_ip': rule.destination_ip,
+                'destination_port': rule.destination_port,
+                'action': rule.action,
                 'enabled': rule.enabled,
             })
         

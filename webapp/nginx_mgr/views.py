@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 def nginx_list(request):
     """List all nginx proxy configurations"""
     configs = NginxProxyConfig.objects.all()
-    
+
     # Filter by status if requested
     status_filter = request.GET.get('status', '')
     if status_filter == 'active':
@@ -30,21 +30,21 @@ def nginx_list(request):
         configs = configs.filter(is_deployed=True)
     elif status_filter == 'ssl':
         configs = configs.filter(ssl_enabled=True)
-    
+
     # Search by name or domain
     search = request.GET.get('search', '')
     if search:
         from django.db import models
         configs = configs.filter(
-            models.Q(name__icontains=search) | 
+            models.Q(name__icontains=search) |
             models.Q(domain_name__icontains=search)
         )
-    
+
     # Pagination
     paginator = Paginator(configs, 10)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
-    
+
     context = {
         'page_obj': page_obj,
         'status_filter': status_filter,
@@ -54,7 +54,7 @@ def nginx_list(request):
         'deployed_configs': NginxProxyConfig.objects.filter(is_deployed=True).count(),
         'ssl_configs': NginxProxyConfig.objects.filter(ssl_enabled=True).count(),
     }
-    
+
     return render(request, 'nginx_mgr/list.html', context)
 
 
@@ -74,7 +74,7 @@ def nginx_create(request):
                 messages.error(request, f'Error creating configuration: {e}')
     else:
         form = NginxProxyConfigForm()
-    
+
     return render(request, 'nginx_mgr/create.html', {'form': form})
 
 
@@ -98,7 +98,7 @@ def nginx_quick_create(request):
                 messages.error(request, f'Error creating configuration: {e}')
     else:
         form = QuickProxyForm()
-    
+
     return render(request, 'nginx_mgr/quick_create.html', {'form': form})
 
 
@@ -107,24 +107,24 @@ def nginx_quick_create(request):
 def nginx_detail(request, pk):
     """View details of a nginx proxy configuration"""
     config = get_object_or_404(NginxProxyConfig, pk=pk)
-    
+
     # Get SSL certificate info if exists
     ssl_cert = getattr(config, 'ssl_certificate', None)
-    
+
     # Get deployment logs
     deployment_logs = config.deployment_logs.order_by('-started_at')[:10]
-    
+
     # Get nginx manager status
     nginx_manager = NginxManager()
     nginx_status = nginx_manager.get_status()
-    
+
     context = {
         'config': config,
         'ssl_cert': ssl_cert,
         'deployment_logs': deployment_logs,
         'nginx_status': nginx_status,
     }
-    
+
     return render(request, 'nginx_mgr/detail.html', context)
 
 
@@ -133,7 +133,7 @@ def nginx_detail(request, pk):
 def nginx_edit(request, pk):
     """Edit an existing nginx proxy configuration"""
     config = get_object_or_404(NginxProxyConfig, pk=pk)
-    
+
     if request.method == 'POST':
         form = NginxProxyConfigForm(request.POST, instance=config)
         if form.is_valid():
@@ -146,12 +146,12 @@ def nginx_edit(request, pk):
                 messages.error(request, f'Error updating configuration: {e}')
     else:
         form = NginxProxyConfigForm(instance=config)
-    
+
     context = {
         'form': form,
         'config': config,
     }
-    
+
     return render(request, 'nginx_mgr/edit.html', context)
 
 
@@ -161,22 +161,22 @@ def nginx_edit(request, pk):
 def nginx_delete(request, pk):
     """Delete a nginx proxy configuration"""
     config = get_object_or_404(NginxProxyConfig, pk=pk)
-    
+
     try:
         # If config is deployed, remove from nginx first
         if config.is_deployed:
             nginx_manager = NginxManager()
             nginx_manager.remove_config(config)
-        
+
         config_name = config.name
         config.delete()
-        
+
         messages.success(request, f'Configuration "{config_name}" deleted successfully!')
-        
+
     except Exception as e:
         logger.error(f"Error deleting nginx config {pk}: {e}")
         messages.error(request, f'Error deleting configuration: {e}')
-    
+
     return redirect('nginx_mgr:list')
 
 
@@ -186,7 +186,8 @@ def nginx_delete(request, pk):
 def nginx_deploy(request, pk):
     """Deploy a nginx proxy configuration"""
     config = get_object_or_404(NginxProxyConfig, pk=pk)
-    
+
+    log = None
     try:
         with transaction.atomic():
             # Create deployment log
@@ -223,10 +224,10 @@ def nginx_deploy(request, pk):
                 
     except Exception as e:
         logger.error(f"Error deploying nginx config {pk}: {e}")
-        if 'log' in locals():
+        if log:
             log.mark_completed('failed', str(e))
         messages.error(request, f'Deployment error: {e}')
-    
+
     return redirect('nginx_mgr:detail', pk=pk)
 
 
@@ -236,7 +237,8 @@ def nginx_deploy(request, pk):
 def nginx_undeploy(request, pk):
     """Remove a nginx proxy configuration from deployment"""
     config = get_object_or_404(NginxProxyConfig, pk=pk)
-    
+
+    log = None
     try:
         with transaction.atomic():
             # Create deployment log
@@ -246,27 +248,27 @@ def nginx_undeploy(request, pk):
                 status='in_progress',
                 config_snapshot=_create_config_snapshot(config)
             )
-            
+
             nginx_manager = NginxManager()
             success, message = nginx_manager.remove_config(config)
-            
+
             if success:
                 config.is_deployed = False
                 config.deployed_at = None
                 config.save()
-                
+
                 log.mark_completed('success', message)
                 messages.success(request, f'Configuration "{config.name}" removed from deployment!')
             else:
                 log.mark_completed('failed', message)
                 messages.error(request, f'Removal failed: {message}')
-                
+
     except Exception as e:
         logger.error(f"Error removing nginx config {pk}: {e}")
-        if 'log' in locals():
+        if log:
             log.mark_completed('failed', str(e))
         messages.error(request, f'Removal error: {e}')
-    
+
     return redirect('nginx_mgr:detail', pk=pk)
 
 
@@ -276,11 +278,12 @@ def nginx_undeploy(request, pk):
 def ssl_renew(request, pk):
     """Renew SSL certificate for a configuration"""
     config = get_object_or_404(NginxProxyConfig, pk=pk)
-    
+
     if not config.ssl_enabled or not config.auto_ssl:
         messages.error(request, 'SSL is not enabled or auto-SSL is disabled for this configuration')
         return redirect('nginx_mgr:detail', pk=pk)
-    
+
+    log = None
     try:
         with transaction.atomic():
             # Create deployment log
@@ -290,27 +293,27 @@ def ssl_renew(request, pk):
                 status='in_progress',
                 config_snapshot=_create_config_snapshot(config)
             )
-            
+
             certbot_manager = CertbotManager()
             success, message = certbot_manager.renew_certificate(config)
-            
+
             if success:
                 log.mark_completed('success', message)
                 messages.success(request, f'SSL certificate renewed for "{config.name}"!')
-                
+
                 # Reload nginx to use new certificate
                 nginx_manager = NginxManager()
                 nginx_manager.reload()
             else:
                 log.mark_completed('failed', message)
                 messages.error(request, f'SSL renewal failed: {message}')
-                
+
     except Exception as e:
         logger.error(f"Error renewing SSL for config {pk}: {e}")
-        if 'log' in locals():
+        if log:
             log.mark_completed('failed', str(e))
         messages.error(request, f'SSL renewal error: {e}')
-    
+
     return redirect('nginx_mgr:detail', pk=pk)
 
 
@@ -320,7 +323,7 @@ def nginx_status(request):
     """Get nginx status and system information"""
     nginx_manager = NginxManager()
     certbot_manager = CertbotManager()
-    
+
     context = {
         'nginx_status': nginx_manager.get_status(),
         'nginx_version': nginx_manager.get_version(),
@@ -329,7 +332,7 @@ def nginx_status(request):
         'deployed_configs': NginxProxyConfig.objects.filter(is_deployed=True).count(),
         'expiring_certs': _get_expiring_certificates(),
     }
-    
+
     return render(request, 'nginx_mgr/status.html', context)
 
 
@@ -338,28 +341,28 @@ def nginx_status(request):
 def deployment_logs(request):
     """View all deployment logs"""
     logs = NginxDeploymentLog.objects.select_related('proxy_config').order_by('-started_at')
-    
+
     # Filter by status
     status_filter = request.GET.get('status', '')
     if status_filter:
         logs = logs.filter(status=status_filter)
-    
+
     # Filter by action
     action_filter = request.GET.get('action', '')
     if action_filter:
         logs = logs.filter(action=action_filter)
-    
+
     # Pagination
     paginator = Paginator(logs, 20)
     page_number = request.GET.get('page')
     page_obj = paginator.get_page(page_number)
-    
+
     context = {
         'page_obj': page_obj,
         'status_filter': status_filter,
         'action_filter': action_filter,
     }
-    
+
     return render(request, 'nginx_mgr/logs.html', context)
 
 
@@ -370,21 +373,21 @@ def ajax_config_status(request, pk):
     try:
         config = get_object_or_404(NginxProxyConfig, pk=pk)
         nginx_manager = NginxManager()
-        
+
         data = {
             'is_deployed': config.is_deployed,
             'nginx_running': nginx_manager.is_running(),
             'config_valid': nginx_manager.test_config(),
             'ssl_cert_exists': hasattr(config, 'ssl_certificate'),
         }
-        
+
         if hasattr(config, 'ssl_certificate'):
             ssl_cert = config.ssl_certificate
             data['ssl_expiry'] = ssl_cert.expiry_date.isoformat()
             data['ssl_expiring_soon'] = ssl_cert.is_expiring_soon()
-        
+
         return JsonResponse({'success': True, 'data': data})
-        
+
     except Exception as e:
         return JsonResponse({'success': False, 'error': str(e)})
 
@@ -404,7 +407,7 @@ def _create_config_snapshot(config):
 def _get_expiring_certificates():
     """Get list of certificates expiring within 30 days"""
     expiring_certs = []
-    
+
     for cert in SSLCertificate.objects.filter(is_valid=True):
         if cert.is_expiring_soon(30):
             expiring_certs.append({
@@ -413,5 +416,5 @@ def _get_expiring_certificates():
                 'days_left': (cert.expiry_date - timezone.now()).days,
                 'config_id': cert.proxy_config.id,
             })
-    
+
     return expiring_certs

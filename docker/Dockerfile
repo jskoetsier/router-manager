@@ -1,4 +1,4 @@
-# Multi-stage Docker build for Router Manager with nginx proxy support
+'# Multi-stage Docker build for Router Manager with nginx proxy support
 
 # Build stage
 FROM python:3.11-slim as builder

@@ -1,4 +1,4 @@
-version: '3.8'
+doell version: '3.8'
 
 services:
   nginx-proxy:
@@ -13,14 +13,14 @@ services:
       - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./nginx/sites-available:/etc/nginx/sites-available:ro
       - ./nginx/sites-enabled:/etc/nginx/sites-enabled:ro
-      
+
       # SSL certificates from Let's Encrypt
       - ./nginx/ssl/certbot:/etc/letsencrypt:ro
       - ./nginx/ssl/dhparam:/etc/ssl/certs/dhparam.pem:ro
-      
+
       # Webroot for Let's Encrypt challenges
       - ./nginx/certbot-webroot:/var/www/certbot
-      
+
       # Logs
       - ./nginx/logs:/var/log/nginx
     depends_on:
@@ -36,10 +36,10 @@ services:
       # SSL certificates storage
       - ./nginx/ssl/certbot:/etc/letsencrypt
       - ./nginx/ssl/certbot-lib:/var/lib/letsencrypt
-      
+
       # Webroot for challenges
       - ./nginx/certbot-webroot:/var/www/certbot
-      
+
       # Logs
       - ./nginx/logs/certbot:/var/log/letsencrypt
     entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
@@ -48,7 +48,7 @@ services:
 
   # Router Manager Web Application
   router-manager:
-    build: 
+    build:
       context: ./webapp
       dockerfile: ../docker/Dockerfile
     container_name: router-manager-app
@@ -67,11 +67,11 @@ services:
       # Share nginx configuration directories with the app
       - ./nginx/sites-available:/nginx-configs/sites-available
       - ./nginx/sites-enabled:/nginx-configs/sites-enabled
-      
+
       # Share certbot directories for certificate management
       - ./nginx/ssl/certbot:/etc/letsencrypt
       - ./nginx/certbot-webroot:/var/www/certbot
-      
+
       # Application data
       - ./data/media:/app/media
       - ./data/staticfiles:/app/staticfiles

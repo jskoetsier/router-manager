@@ -56,10 +56,10 @@ Internet → Nginx Proxy → Router Manager → Backend Applications
    ```bash
    cd router-manager/webapp
    pip install -r requirements.txt
-   
+
    # Configure database settings in .env file
    cp .env.example .env
-   
+
    # Run migrations
    python manage.py migrate
    python manage.py createsuperuser
@@ -77,7 +77,7 @@ Internet → Nginx Proxy → Router Manager → Backend Applications
    ```bash
    # Start Router Manager
    python manage.py runserver 0.0.0.0:8000
-   
+
    # Or use gunicorn for production
    gunicorn router_manager.wsgi:application --bind 0.0.0.0:8000
    ```
@@ -219,7 +219,7 @@ router-manager/
    # Allow HTTP and HTTPS traffic
    sudo ufw allow 80/tcp
    sudo ufw allow 443/tcp
-   
+
    # Restrict Router Manager access
    sudo ufw allow from <your-ip> to any port 8000
    ```

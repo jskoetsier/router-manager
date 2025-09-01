@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% load crispy_forms_tags %}
+
+{% block title %}Quick Proxy Setup{% endblock %}
+
+{% block content %}
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-rocket text-success"></i>
+                        Quick Proxy Setup
+                    </h3>
+                    <p class="card-subtitle text-muted mb-0">
+                        Set up a simple reverse proxy with automatic SSL in just a few steps
+                    </p>
+                </div>
+
+                <div class="card-body">
+                    {% crispy form %}
+                </div>
+
+                <div class="card-footer">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-info-circle text-info"></i> What this creates:</h6>
+                            <ul class="small text-muted mb-0">
+                                <li>Reverse proxy from domain to your local application</li>
+                                <li>Automatic SSL certificate via Let's Encrypt</li>
+                                <li>HTTP to HTTPS redirect (if SSL enabled)</li>
+                                <li>Security headers and modern TLS configuration</li>
+                            </ul>
+                        </div>
+                        <div class="col-md-6">
+                            <h6><i class="fas fa-cog text-warning"></i> Need more options?</h6>
+                            <p class="small text-muted mb-0">
+                                Use <a href="{% url 'nginx_mgr:create' %}">Advanced Setup</a> for custom headers, 
+                                rate limiting, and detailed configuration options.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

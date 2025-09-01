@@ -1,0 +1,208 @@
+{% extends "base.html" %}
+
+{% block title %}Nginx System Status{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-header">
+                    <h3 class="card-title">
+                        <i class="fas fa-chart-line text-info"></i>
+                        Nginx System Status
+                    </h3>
+                </div>
+
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <h5>Nginx Service Status</h5>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <tr>
+                                        <td><strong>Service Status:</strong></td>
+                                        <td>
+                                            {% if nginx_status.running %}
+                                                <span class="badge bg-success">
+                                                    <i class="fas fa-check-circle"></i> Running
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-danger">
+                                                    <i class="fas fa-times-circle"></i> Stopped
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Configuration:</strong></td>
+                                        <td>
+                                            {% if nginx_status.config_valid %}
+                                                <span class="badge bg-success">
+                                                    <i class="fas fa-check-circle"></i> Valid
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-danger">
+                                                    <i class="fas fa-times-circle"></i> Invalid
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Version:</strong></td>
+                                        <td><code>{{ nginx_version }}</code></td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+
+                        <div class="col-md-6">
+                            <h5>Certbot Status</h5>
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <tr>
+                                        <td><strong>Certbot Available:</strong></td>
+                                        <td>
+                                            {% if certbot_status.available %}
+                                                <span class="badge bg-success">
+                                                    <i class="fas fa-check-circle"></i> Available
+                                                </span>
+                                            {% else %}
+                                                <span class="badge bg-danger">
+                                                    <i class="fas fa-times-circle"></i> Not Available
+                                                </span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td><strong>Version:</strong></td>
+                                        <td><code>{{ certbot_status.version }}</code></td>
+                                    </tr>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row mt-4">
+                        <div class="col-md-3">
+                            <div class="info-box bg-info">
+                                <span class="info-box-icon"><i class="fas fa-server"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Active Configs</span>
+                                    <span class="info-box-number">{{ active_configs }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-box bg-success">
+                                <span class="info-box-icon"><i class="fas fa-rocket"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Deployed</span>
+                                    <span class="info-box-number">{{ deployed_configs }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-box bg-warning">
+                                <span class="info-box-icon"><i class="fas fa-certificate"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Expiring Soon</span>
+                                    <span class="info-box-number">{{ expiring_certs|length }}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="info-box bg-secondary">
+                                <span class="info-box-icon"><i class="fas fa-history"></i></span>
+                                <div class="info-box-content">
+                                    <span class="info-box-text">Recent Deploys</span>
+                                    <span class="info-box-number">-</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {% if expiring_certs %}
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h5>
+                                <i class="fas fa-exclamation-triangle text-warning"></i>
+                                Certificates Expiring Soon
+                            </h5>
+                            <div class="table-responsive">
+                                <table class="table table-striped">
+                                    <thead>
+                                        <tr>
+                                            <th>Domain</th>
+                                            <th>Expires</th>
+                                            <th>Days Left</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for cert in expiring_certs %}
+                                        <tr>
+                                            <td>{{ cert.domain }}</td>
+                                            <td>{{ cert.expires|date:"Y-m-d H:i" }}</td>
+                                            <td>
+                                                {% if cert.days_left < 7 %}
+                                                    <span class="badge bg-danger">{{ cert.days_left }} days</span>
+                                                {% elif cert.days_left < 14 %}
+                                                    <span class="badge bg-warning">{{ cert.days_left }} days</span>
+                                                {% else %}
+                                                    <span class="badge bg-info">{{ cert.days_left }} days</span>
+                                                {% endif %}
+                                            </td>
+                                            <td>
+                                                <a href="{% url 'nginx_mgr:detail' cert.config_id %}" class="btn btn-sm btn-outline-primary">
+                                                    <i class="fas fa-eye"></i> View Config
+                                                </a>
+                                                <form method="post" action="{% url 'nginx_mgr:ssl_renew' cert.config_id %}" style="display: inline;">
+                                                    {% csrf_token %}
+                                                    <button type="submit" class="btn btn-sm btn-outline-warning"
+                                                            onclick="return confirm('Renew SSL certificate for {{ cert.domain }}?')">
+                                                        <i class="fas fa-sync"></i> Renew
+                                                    </button>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="card-footer">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <a href="{% url 'nginx_mgr:list' %}" class="btn btn-primary">
+                                <i class="fas fa-list"></i> View All Configurations
+                            </a>
+                            <a href="{% url 'nginx_mgr:logs' %}" class="btn btn-outline-info">
+                                <i class="fas fa-file-alt"></i> Deployment Logs
+                            </a>
+                        </div>
+                        <div class="col-md-6 text-end">
+                            <button class="btn btn-outline-secondary" onclick="location.reload()">
+                                <i class="fas fa-sync"></i> Refresh Status
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// Auto-refresh every 30 seconds
+setInterval(function() {
+    location.reload();
+}, 30000);
+</script>
+{% endblock %}

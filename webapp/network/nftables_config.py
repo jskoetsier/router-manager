@@ -341,32 +341,78 @@ table inet nat {
     def apply_network_changes(self):
         """Complete workflow to apply network configuration changes"""
         logger.info("Starting network configuration update")
-
-        # Backup current config
-        if not self.backup_current_config():
-            return False, "Failed to backup current configuration"
-
-        # Generate new configuration
+        
+        # Instead of rewriting the entire config, just add rules dynamically
         try:
-            new_config = self.generate_config()
+            # Apply port forwarding rules
+            success, message = self.apply_port_forward_rules()
+            if not success:
+                return False, message
+            
+            # Apply firewall rules
+            success, message = self.apply_firewall_rules()
+            if not success:
+                return False, message
+                
         except Exception as e:
-            logger.error(f"Failed to generate configuration: {e}")
-            return False, f"Configuration generation failed: {e}"
-
-        # Write and validate configuration
-        success, message = self.write_config(new_config)
-        if not success:
-            return False, message
-
-        # Apply configuration
-        success, message = self.apply_config()
-        if not success:
-            # Try to rollback on failure
-            self.rollback_config()
-            return False, message
-
+            logger.error(f"Failed to apply network rules: {e}")
+            return False, f"Network configuration failed: {e}"
+        
         logger.info("Network configuration update completed successfully")
         return True, "Network configuration updated successfully"
+
+    def apply_port_forward_rules(self):
+        """Apply port forwarding rules using nft commands"""
+        try:
+            # Clear existing port forward rules
+            subprocess.run(['nft', 'flush', 'chain', 'inet', 'nat', 'prerouting'], check=False)
+            subprocess.run(['nft', 'flush', 'chain', 'inet', 'filter', 'forward'], check=False)
+            
+            # Re-add allow established/related in forward chain
+            subprocess.run(['nft', 'add', 'rule', 'inet', 'filter', 'forward', 'ct', 'state', 'established,related', 'accept'], check=True)
+            
+            # Add port forwarding rules
+            for pf in PortForward.objects.filter(enabled=True):
+                if pf.protocol.lower() == 'both':
+                    protocols = ['tcp', 'udp']
+                else:
+                    protocols = [pf.protocol.lower()]
+                
+                for proto in protocols:
+                    # Add DNAT rule
+                    subprocess.run([
+                        'nft', 'add', 'rule', 'inet', 'nat', 'prerouting',
+                        proto, 'dport', str(pf.external_port), 
+                        'dnat', 'ip', 'to', f'{pf.internal_ip}:{pf.internal_port}'
+                    ], check=True)
+                    
+                    # Add forward rule
+                    subprocess.run([
+                        'nft', 'add', 'rule', 'inet', 'filter', 'forward',
+                        'ip', 'daddr', pf.internal_ip, proto, 'dport', str(pf.internal_port), 'accept'
+                    ], check=True)
+            
+            return True, "Port forwarding rules applied successfully"
+            
+        except subprocess.CalledProcessError as e:
+            logger.error(f"Failed to apply port forwarding rules: {e}")
+            return False, f"Failed to apply port forwarding rules: {e}"
+
+    def apply_firewall_rules(self):
+        """Apply firewall rules using nft commands"""
+        try:
+            # Add custom firewall rules (don't clear input chain as it has essential rules)
+            for rule in NFTableRule.objects.filter(enabled=True):
+                # Build the nft command for this rule
+                nft_rule = self._build_nftables_rule_from_model(rule)
+                cmd = ['nft', 'add', 'rule', 'inet', 'filter', 'input'] + nft_rule.split()
+                subprocess.run(cmd, check=True)
+            
+            return True, "Firewall rules applied successfully"
+            
+        except subprocess.CalledProcessError as e:
+            logger.error(f"Failed to apply firewall rules: {e}")
+            return False, f"Failed to apply firewall rules: {e}"
 
     def get_current_config_summary(self):
         """Get a summary of current configuration from database"""

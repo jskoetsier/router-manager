@@ -1,0 +1,10 @@
+[Unit]
+Description=Run Router Manager Metrics Collection every 60 seconds
+Requires=router-manager-metrics.service
+
+[Timer]
+OnCalendar=*:*:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

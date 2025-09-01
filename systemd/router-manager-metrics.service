@@ -1,0 +1,12 @@
+[Unit]
+Description=Router Manager Metrics Collection
+After=network.target
+
+[Service]
+Type=oneshot
+User=root
+WorkingDirectory=/opt/router-manager/webapp
+Environment="PATH=/opt/router-manager/venv/bin:/usr/local/bin:/usr/bin:/bin"
+ExecStart=/opt/router-manager/venv/bin/python manage.py collect_metrics --once
+StandardOutput=journal
+StandardError=journal

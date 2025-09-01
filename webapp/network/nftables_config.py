@@ -45,7 +45,10 @@ table inet filter {
 
         # Allow router-manager web interface
         tcp dport 8000 accept
-
+        
+        # Allow port forwarding traffic (dynamic ports)
+        # PORT_FORWARD_INPUT_PLACEHOLDER
+        
         # Dynamic firewall rules will be inserted here
         # FIREWALL_RULES_PLACEHOLDER
 
@@ -80,7 +83,7 @@ table inet nat {
         type nat hook postrouting priority srcnat; policy accept;
 
         # Masquerade for internal networks
-        oifname "eth0" masquerade
+        oifname "ens18" masquerade
     }
 }
 """
@@ -91,11 +94,13 @@ table inet nat {
 
         # Generate port forwarding rules
         port_forward_rules = self._generate_port_forward_rules()
+        port_forward_input_rules = self._generate_port_forward_input_rules()
         dnat_rules = self._generate_dnat_rules()
         firewall_rules = self._generate_firewall_rules()
-
+        
         # Replace placeholders
         config = config.replace("        # FORWARD_RULES_PLACEHOLDER", port_forward_rules)
+        config = config.replace("        # PORT_FORWARD_INPUT_PLACEHOLDER", port_forward_input_rules)
         config = config.replace("        # DNAT_RULES_PLACEHOLDER", dnat_rules)
         config = config.replace("        # FIREWALL_RULES_PLACEHOLDER", firewall_rules)
 
@@ -119,6 +124,25 @@ table inet nat {
                 rules.append(forward_rule)
 
         return '\n'.join(rules) if rules else "        # No port forwarding rules"
+
+    def _generate_port_forward_input_rules(self):
+        """Generate INPUT rules to allow port forwarding traffic"""
+        rules = []
+        
+        for pf in PortForward.objects.filter(enabled=True):
+            rule = f"        # Allow external port {pf.external_port} for forwarding"
+            rules.append(rule)
+            
+            if pf.protocol.lower() == 'both':
+                protocols = ['tcp', 'udp']
+            else:
+                protocols = [pf.protocol.lower()]
+            
+            for proto in protocols:
+                input_rule = f"        {proto} dport {pf.external_port} accept"
+                rules.append(input_rule)
+        
+        return '\n'.join(rules) if rules else "        # No port forward input rules"
 
     def _generate_dnat_rules(self):
         """Generate DNAT rules for port forwarding"""

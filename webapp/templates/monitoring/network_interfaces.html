@@ -152,15 +152,14 @@
     <div class="row mb-4">
         <div class="col-md-3">
             <div class="stat-card bg-primary text-white">
-                <div class="stat-value">{{ interfaces.count }}</div>
+                <div class="stat-value">{{ interfaces|length }}</div>
                 <div class="stat-label">Total Interfaces</div>
             </div>
         </div>
         <div class="col-md-3">
             <div class="stat-card bg-success text-white">
                 <div class="stat-value">
-                    {{ interfaces|length|add:0 }}
-                    {% comment %} Count active interfaces in template {% endcomment %}
+                    {% if interfaces %}{{ interfaces|length }}{% else %}0{% endif %}
                 </div>
                 <div class="stat-label">Active Interfaces</div>
             </div>

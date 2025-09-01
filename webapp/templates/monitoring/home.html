@@ -201,7 +201,7 @@
         <div class="col-md-3">
             <div class="metric-card network">
                 <div class="metric-value">
-                    {% if interfaces %}{{ interfaces.count }}{% else %}0{% endif %}
+                    {% if interfaces %}{{ interfaces|length }}{% else %}0{% endif %}
                 </div>
                 <div class="metric-label">Network Interfaces</div>
                 <div class="metric-trend">

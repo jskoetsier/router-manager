@@ -7,16 +7,16 @@ from .models import NginxProxyConfig, SSLCertificate, NginxDeploymentLog
 @admin.register(NginxProxyConfig)
 class NginxProxyConfigAdmin(admin.ModelAdmin):
     list_display = [
-        'name', 'domain_name', 'upstream_display', 'ssl_status', 
+        'name', 'domain_name', 'upstream_display', 'ssl_status',
         'is_active', 'is_deployed', 'created_at'
     ]
     list_filter = [
-        'is_active', 'is_deployed', 'ssl_enabled', 'auto_ssl', 
+        'is_active', 'is_deployed', 'ssl_enabled', 'auto_ssl',
         'upstream_protocol', 'created_at'
     ]
     search_fields = ['name', 'domain_name', 'upstream_host', 'description']
     readonly_fields = ['created_at', 'updated_at', 'deployed_at']
-    
+
     fieldsets = (
         ('Basic Configuration', {
             'fields': ('name', 'description', 'is_active')
@@ -48,19 +48,19 @@ class NginxProxyConfigAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         })
     )
-    
+
     actions = ['deploy_selected', 'undeploy_selected', 'activate_selected', 'deactivate_selected']
-    
+
     def upstream_display(self, obj):
         """Display upstream server info"""
         return f"{obj.upstream_protocol}://{obj.upstream_host}:{obj.upstream_port}"
     upstream_display.short_description = "Upstream Server"
-    
+
     def ssl_status(self, obj):
         """Display SSL status with visual indicators"""
         if not obj.ssl_enabled:
             return format_html('<span class="badge badge-secondary">SSL Disabled</span>')
-        
+
         if obj.auto_ssl:
             if hasattr(obj, 'ssl_certificate'):
                 cert = obj.ssl_certificate
@@ -73,7 +73,7 @@ class NginxProxyConfigAdmin(admin.ModelAdmin):
         else:
             return format_html('<span class="badge badge-primary">Manual SSL</span>')
     ssl_status.short_description = "SSL Status"
-    
+
     def deploy_selected(self, request, queryset):
         """Deploy selected configurations"""
         # This would need to be implemented with proper deployment logic
@@ -83,7 +83,7 @@ class NginxProxyConfigAdmin(admin.ModelAdmin):
                 pass
         self.message_user(request, f"Deployment initiated for {queryset.count()} configurations.")
     deploy_selected.short_description = "Deploy selected configurations"
-    
+
     def undeploy_selected(self, request, queryset):
         """Remove selected configurations from deployment"""
         for config in queryset.filter(is_deployed=True):
@@ -91,13 +91,13 @@ class NginxProxyConfigAdmin(admin.ModelAdmin):
             pass
         self.message_user(request, f"Removal initiated for deployed configurations.")
     undeploy_selected.short_description = "Remove selected from deployment"
-    
+
     def activate_selected(self, request, queryset):
         """Activate selected configurations"""
         updated = queryset.update(is_active=True)
         self.message_user(request, f"{updated} configurations activated.")
     activate_selected.short_description = "Activate selected configurations"
-    
+
     def deactivate_selected(self, request, queryset):
         """Deactivate selected configurations"""
         updated = queryset.update(is_active=False)
@@ -108,13 +108,13 @@ class NginxProxyConfigAdmin(admin.ModelAdmin):
 @admin.register(SSLCertificate)
 class SSLCertificateAdmin(admin.ModelAdmin):
     list_display = [
-        'proxy_config', 'issuer', 'issued_date', 'expiry_date', 
+        'proxy_config', 'issuer', 'issued_date', 'expiry_date',
         'expiry_status', 'is_valid', 'auto_renewal'
     ]
     list_filter = ['issuer', 'is_valid', 'auto_renewal', 'issued_date', 'expiry_date']
     search_fields = ['proxy_config__name', 'proxy_config__domain_name']
     readonly_fields = ['created_at', 'updated_at']
-    
+
     fieldsets = (
         ('Certificate Information', {
             'fields': ('proxy_config', 'issuer', 'issued_date', 'expiry_date')
@@ -127,11 +127,11 @@ class SSLCertificateAdmin(admin.ModelAdmin):
             'fields': ('is_valid', 'auto_renewal', 'created_at', 'updated_at')
         })
     )
-    
+
     def expiry_status(self, obj):
         """Display certificate expiry status"""
         days_left = (obj.expiry_date - timezone.now()).days
-        
+
         if days_left < 0:
             return format_html('<span class="badge badge-danger">Expired</span>')
         elif days_left < 7:
@@ -146,13 +146,13 @@ class SSLCertificateAdmin(admin.ModelAdmin):
 @admin.register(NginxDeploymentLog)
 class NginxDeploymentLogAdmin(admin.ModelAdmin):
     list_display = [
-        'proxy_config', 'action', 'status', 'started_at', 
+        'proxy_config', 'action', 'status', 'started_at',
         'completed_at', 'duration', 'message_preview'
     ]
     list_filter = ['action', 'status', 'started_at']
     search_fields = ['proxy_config__name', 'message']
     readonly_fields = ['started_at', 'completed_at', 'duration']
-    
+
     fieldsets = (
         ('Deployment Information', {
             'fields': ('proxy_config', 'action', 'status')
@@ -165,7 +165,7 @@ class NginxDeploymentLogAdmin(admin.ModelAdmin):
             'classes': ('collapse',)
         })
     )
-    
+
     def duration(self, obj):
         """Calculate and display deployment duration"""
         if obj.completed_at and obj.started_at:
@@ -173,14 +173,14 @@ class NginxDeploymentLogAdmin(admin.ModelAdmin):
             total_seconds = int(duration.total_seconds())
             minutes = total_seconds // 60
             seconds = total_seconds % 60
-            
+
             if minutes > 0:
                 return f"{minutes}m {seconds}s"
             else:
                 return f"{seconds}s"
         return "-"
     duration.short_description = "Duration"
-    
+
     def message_preview(self, obj):
         """Display a preview of the message"""
         if obj.message:

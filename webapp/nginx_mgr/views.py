@@ -197,23 +197,23 @@ def nginx_deploy(request, pk):
                 status='in_progress',
                 config_snapshot=_create_config_snapshot(config)
             )
-            
+
             nginx_manager = NginxManager()
-            
+
             # Deploy configuration
             success, message = nginx_manager.deploy_config(config)
-            
+
             if success:
                 # If SSL is enabled and auto_ssl is true, get SSL certificate
                 if config.ssl_enabled and config.auto_ssl:
                     certbot_manager = CertbotManager()
                     cert_success, cert_message = certbot_manager.obtain_certificate(config)
-                    
+
                     if not cert_success:
                         log.mark_completed('failed', f'Config deployed but SSL failed: {cert_message}')
                         messages.warning(request, f'Configuration deployed but SSL certificate failed: {cert_message}')
                         return redirect('nginx_mgr:detail', pk=pk)
-                
+
                 # Mark as deployed
                 config.mark_deployed()
                 log.mark_completed('success', message)
@@ -221,7 +221,7 @@ def nginx_deploy(request, pk):
             else:
                 log.mark_completed('failed', message)
                 messages.error(request, f'Deployment failed: {message}')
-                
+
     except Exception as e:
         logger.error(f"Error deploying nginx config {pk}: {e}")
         if log:

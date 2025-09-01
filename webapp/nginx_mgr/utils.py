@@ -19,16 +19,39 @@ class NginxManager:
         self.nginx_binary = getattr(settings, 'NGINX_BINARY', '/usr/sbin/nginx')
         self.systemctl_binary = getattr(settings, 'SYSTEMCTL_BINARY', '/usr/bin/systemctl')
 
+        # Ensure directories exist
+        self._ensure_directories()
+
+    def _ensure_directories(self):
+        """Ensure nginx configuration directories exist"""
+        try:
+            # Create nginx config directory if it doesn't exist
+            subprocess.run(['sudo', 'mkdir', '-p', self.nginx_config_dir],
+                         capture_output=True, text=True, timeout=10)
+
+            # Create nginx enabled directory if it doesn't exist
+            subprocess.run(['sudo', 'mkdir', '-p', self.nginx_enabled_dir],
+                         capture_output=True, text=True, timeout=10)
+
+            # Create certbot webroot directory
+            webroot_path = getattr(settings, 'CERTBOT_WEBROOT_PATH', '/var/www/certbot')
+            subprocess.run(['sudo', 'mkdir', '-p', webroot_path],
+                         capture_output=True, text=True, timeout=10)
+
+            logger.info(f"Ensured nginx directories exist: {self.nginx_config_dir}, {self.nginx_enabled_dir}")
+        except Exception as e:
+            logger.warning(f"Could not ensure nginx directories exist: {e}")
+
     def deploy_config(self, proxy_config):
         """Deploy nginx configuration for a proxy config"""
         try:
             # Generate nginx configuration
             config_content = self._generate_config(proxy_config)
-            
+
             # Write configuration file using sudo
             config_filename = f"{proxy_config.name}.conf"
             config_path = os.path.join(self.nginx_config_dir, config_filename)
-            
+
             # Use sudo tee to write the file with elevated privileges
             process = subprocess.run(
                 ['sudo', 'tee', config_path],
@@ -37,10 +60,10 @@ class NginxManager:
                 capture_output=True,
                 timeout=30
             )
-            
+
             if process.returncode != 0:
                 return False, f"Failed to write configuration file: {process.stderr}"
-            
+
             # Enable the site by creating symlink using sudo
             enabled_path = os.path.join(self.nginx_enabled_dir, config_filename)
             if not os.path.exists(enabled_path):
@@ -52,18 +75,18 @@ class NginxManager:
                 )
                 if result.returncode != 0:
                     return False, f"Failed to create symlink: {result.stderr}"
-            
+
             # Test nginx configuration
             if not self.test_config():
                 return False, "Nginx configuration test failed"
-            
+
             # Reload nginx
             if not self.reload():
                 return False, "Failed to reload nginx"
-            
+
             logger.info(f"Deployed nginx configuration for {proxy_config.name}")
             return True, f"Successfully deployed configuration for {proxy_config.domain_name}"
-            
+
         except Exception as e:
             logger.error(f"Failed to deploy nginx config for {proxy_config.name}: {e}")
             return False, str(e)
@@ -140,7 +163,11 @@ class NginxManager:
                 text=True,
                 timeout=30
             )
-            return result.returncode == 0
+            if result.returncode == 0:
+                return True
+            else:
+                logger.error(f"Failed to reload nginx: {result.stderr}")
+                return False
         except Exception as e:
             logger.error(f"Failed to reload nginx: {e}")
             return False
@@ -149,7 +176,7 @@ class NginxManager:
         """Restart nginx service"""
         try:
             result = subprocess.run(
-                [self.systemctl_binary, 'restart', 'nginx'],
+                ['sudo', self.systemctl_binary, 'restart', 'nginx'],
                 capture_output=True,
                 text=True,
                 timeout=30

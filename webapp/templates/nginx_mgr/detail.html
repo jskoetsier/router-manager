@@ -17,24 +17,32 @@
                         {% if config.is_active and not config.is_deployed %}
                         <form method="post" action="{% url 'nginx_mgr:deploy' config.pk %}" style="display: inline;">
                             {% csrf_token %}
-                            <button type="submit" class="btn btn-success btn-sm me-2" 
-                                    onclick="return confirm('Deploy this configuration to nginx?')">
+                            <button type="submit" class="btn btn-success btn-sm me-2"
+                                onclick="return confirm('Deploy this configuration to nginx?')">
                                 <i class="fas fa-rocket"></i> Deploy
                             </button>
                         </form>
                         {% elif config.is_deployed %}
                         <form method="post" action="{% url 'nginx_mgr:undeploy' config.pk %}" style="display: inline;">
                             {% csrf_token %}
-                            <button type="submit" class="btn btn-warning btn-sm me-2" 
-                                    onclick="return confirm('Remove this configuration from deployment?')">
+                            <button type="submit" class="btn btn-warning btn-sm me-2"
+                                onclick="return confirm('Remove this configuration from deployment?')">
                                 <i class="fas fa-stop"></i> Undeploy
                             </button>
                         </form>
                         {% endif %}
-                        
-                        <a href="{% url 'nginx_mgr:edit' config.pk %}" class="btn btn-outline-secondary btn-sm">
+
+                        <a href="{% url 'nginx_mgr:edit' config.pk %}" class="btn btn-outline-secondary btn-sm me-2">
                             <i class="fas fa-edit"></i> Edit
                         </a>
+
+                        <form method="post" action="{% url 'nginx_mgr:delete' config.pk %}" style="display: inline;">
+                            {% csrf_token %}
+                            <button type="submit" class="btn btn-outline-danger btn-sm"
+                                onclick="return confirm('Are you sure you want to delete this configuration? This action cannot be undone.')">
+                                <i class="fas fa-trash"></i> Delete
+                            </button>
+                        </form>
                     </div>
                 </div>
 
@@ -52,7 +60,8 @@
                                     <td>
                                         <span class="badge bg-light text-dark">{{ config.domain_name }}</span>
                                         {% if config.ssl_enabled %}
-                                        <a href="https://{{ config.domain_name }}" target="_blank" class="btn btn-sm btn-outline-primary ms-2">
+                                        <a href="https://{{ config.domain_name }}" target="_blank"
+                                            class="btn btn-sm btn-outline-primary ms-2">
                                             <i class="fas fa-external-link-alt"></i> Visit
                                         </a>
                                         {% endif %}
@@ -66,19 +75,19 @@
                                     <td><strong>Status:</strong></td>
                                     <td>
                                         {% if config.is_active %}
-                                            {% if config.is_deployed %}
-                                                <span class="badge bg-success">
-                                                    <i class="fas fa-check-circle"></i> Active & Deployed
-                                                </span>
-                                            {% else %}
-                                                <span class="badge bg-warning">
-                                                    <i class="fas fa-pause-circle"></i> Active (Not Deployed)
-                                                </span>
-                                            {% endif %}
+                                        {% if config.is_deployed %}
+                                        <span class="badge bg-success">
+                                            <i class="fas fa-check-circle"></i> Active & Deployed
+                                        </span>
                                         {% else %}
-                                            <span class="badge bg-secondary">
-                                                <i class="fas fa-stop-circle"></i> Inactive
-                                            </span>
+                                        <span class="badge bg-warning">
+                                            <i class="fas fa-pause-circle"></i> Active (Not Deployed)
+                                        </span>
+                                        {% endif %}
+                                        {% else %}
+                                        <span class="badge bg-secondary">
+                                            <i class="fas fa-stop-circle"></i> Inactive
+                                        </span>
                                         {% endif %}
                                     </td>
                                 </tr>
@@ -90,7 +99,7 @@
                                 {% endif %}
                             </table>
                         </div>
-                        
+
                         <div class="col-md-6">
                             <h5>SSL Configuration</h5>
                             <table class="table table-sm">
@@ -98,9 +107,9 @@
                                     <td><strong>SSL Enabled:</strong></td>
                                     <td>
                                         {% if config.ssl_enabled %}
-                                            <span class="badge bg-success"><i class="fas fa-check"></i> Yes</span>
+                                        <span class="badge bg-success"><i class="fas fa-check"></i> Yes</span>
                                         {% else %}
-                                            <span class="badge bg-secondary"><i class="fas fa-times"></i> No</span>
+                                        <span class="badge bg-secondary"><i class="fas fa-times"></i> No</span>
                                         {% endif %}
                                     </td>
                                 </tr>
@@ -108,9 +117,9 @@
                                     <td><strong>Auto SSL:</strong></td>
                                     <td>
                                         {% if config.auto_ssl %}
-                                            <span class="badge bg-success"><i class="fas fa-check"></i> Yes</span>
+                                        <span class="badge bg-success"><i class="fas fa-check"></i> Yes</span>
                                         {% else %}
-                                            <span class="badge bg-secondary"><i class="fas fa-times"></i> No</span>
+                                        <span class="badge bg-secondary"><i class="fas fa-times"></i> No</span>
                                         {% endif %}
                                     </td>
                                 </tr>
@@ -118,9 +127,9 @@
                                     <td><strong>Force HTTPS:</strong></td>
                                     <td>
                                         {% if config.force_https %}
-                                            <span class="badge bg-success"><i class="fas fa-check"></i> Yes</span>
+                                        <span class="badge bg-success"><i class="fas fa-check"></i> Yes</span>
                                         {% else %}
-                                            <span class="badge bg-secondary"><i class="fas fa-times"></i> No</span>
+                                        <span class="badge bg-secondary"><i class="fas fa-times"></i> No</span>
                                         {% endif %}
                                     </td>
                                 </tr>
@@ -129,15 +138,18 @@
                                     <td><strong>Certificate:</strong></td>
                                     <td>
                                         {% if ssl_cert.is_expiring_soon %}
-                                            <span class="badge bg-warning">Expires {{ ssl_cert.expiry_date|date:"Y-m-d" }}</span>
+                                        <span class="badge bg-warning">Expires {{ ssl_cert.expiry_date|date:"Y-m-d"
+                                            }}</span>
                                         {% else %}
-                                            <span class="badge bg-success">Valid until {{ ssl_cert.expiry_date|date:"Y-m-d" }}</span>
+                                        <span class="badge bg-success">Valid until {{ ssl_cert.expiry_date|date:"Y-m-d"
+                                            }}</span>
                                         {% endif %}
                                         {% if config.ssl_enabled and config.auto_ssl %}
-                                        <form method="post" action="{% url 'nginx_mgr:ssl_renew' config.pk %}" style="display: inline;">
+                                        <form method="post" action="{% url 'nginx_mgr:ssl_renew' config.pk %}"
+                                            style="display: inline;">
                                             {% csrf_token %}
-                                            <button type="submit" class="btn btn-sm btn-outline-info ms-2" 
-                                                    onclick="return confirm('Renew SSL certificate?')">
+                                            <button type="submit" class="btn btn-sm btn-outline-info ms-2"
+                                                onclick="return confirm('Renew SSL certificate?')">
                                                 <i class="fas fa-sync"></i> Renew
                                             </button>
                                         </form>
@@ -194,28 +206,28 @@
                                     </td>
                                     <td>
                                         {% if log.status == 'success' %}
-                                            <span class="badge bg-success">Success</span>
+                                        <span class="badge bg-success">Success</span>
                                         {% elif log.status == 'failed' %}
-                                            <span class="badge bg-danger">Failed</span>
+                                        <span class="badge bg-danger">Failed</span>
                                         {% elif log.status == 'in_progress' %}
-                                            <span class="badge bg-info">In Progress</span>
+                                        <span class="badge bg-info">In Progress</span>
                                         {% else %}
-                                            <span class="badge bg-secondary">{{ log.get_status_display }}</span>
+                                        <span class="badge bg-secondary">{{ log.get_status_display }}</span>
                                         {% endif %}
                                     </td>
                                     <td>{{ log.started_at|date:"Y-m-d H:i:s" }}</td>
                                     <td>
                                         {% if log.completed_at %}
-                                            {{ log.completed_at|timesince:log.started_at }}
+                                        {{ log.completed_at|timesince:log.started_at }}
                                         {% else %}
-                                            -
+                                        -
                                         {% endif %}
                                     </td>
                                     <td>
                                         {% if log.message %}
-                                            <small>{{ log.message|truncatechars:100 }}</small>
+                                        <small>{{ log.message|truncatechars:100 }}</small>
                                         {% else %}
-                                            -
+                                        -
                                         {% endif %}
                                     </td>
                                 </tr>
@@ -247,17 +259,17 @@
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <span>Nginx Service:</span>
                         {% if nginx_status.running %}
-                            <span class="badge bg-success">Running</span>
+                        <span class="badge bg-success">Running</span>
                         {% else %}
-                            <span class="badge bg-danger">Stopped</span>
+                        <span class="badge bg-danger">Stopped</span>
                         {% endif %}
                     </div>
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <span>Configuration:</span>
                         {% if nginx_status.config_valid %}
-                            <span class="badge bg-success">Valid</span>
+                        <span class="badge bg-success">Valid</span>
                         {% else %}
-                            <span class="badge bg-danger">Invalid</span>
+                        <span class="badge bg-danger">Invalid</span>
                         {% endif %}
                     </div>
                     <div class="d-flex justify-content-between align-items-center">
@@ -314,23 +326,23 @@
 
 {% block extra_js %}
 <script>
-function downloadConfig() {
-    // This would generate and download the nginx configuration
-    alert('Configuration download feature - to be implemented');
-}
+    function downloadConfig() {
+        // This would generate and download the nginx configuration
+        alert('Configuration download feature - to be implemented');
+    }
 
-// Auto-refresh status every 30 seconds
-setInterval(function() {
-    $.get('{% url "nginx_mgr:ajax_status" config.pk %}')
-        .done(function(data) {
-            if (data.success) {
-                // Update status indicators
-                console.log('Status updated:', data.data);
-            }
-        })
-        .fail(function() {
-            console.log('Failed to update status');
-        });
-}, 30000);
+    // Auto-refresh status every 30 seconds
+    setInterval(function () {
+        $.get('{% url "nginx_mgr:ajax_status" config.pk %}')
+            .done(function (data) {
+                if (data.success) {
+                    // Update status indicators
+                    console.log('Status updated:', data.data);
+                }
+            })
+            .fail(function () {
+                console.log('Failed to update status');
+            });
+    }, 30000);
 </script>
 {% endblock %}

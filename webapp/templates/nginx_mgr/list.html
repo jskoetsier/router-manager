@@ -72,7 +72,7 @@
                     <div class="row mb-3">
                         <div class="col-md-6">
                             <form method="get" class="d-flex">
-                                <input type="text" name="search" class="form-control me-2" 
+                                <input type="text" name="search" class="form-control me-2"
                                        placeholder="Search by name or domain..." value="{{ search }}">
                                 <button type="submit" class="btn btn-outline-primary">
                                     <i class="fas fa-search"></i>
@@ -173,12 +173,19 @@
                                             {% if config.is_active and not config.is_deployed %}
                                             <form method="post" action="{% url 'nginx_mgr:deploy' config.pk %}" style="display: inline;">
                                                 {% csrf_token %}
-                                                <button type="submit" class="btn btn-outline-success btn-sm" 
+                                                <button type="submit" class="btn btn-outline-success btn-sm"
                                                         onclick="return confirm('Deploy this configuration?')">
                                                     <i class="fas fa-rocket"></i>
                                                 </button>
                                             </form>
                                             {% endif %}
+                                            <form method="post" action="{% url 'nginx_mgr:delete' config.pk %}" style="display: inline;">
+                                                {% csrf_token %}
+                                                <button type="submit" class="btn btn-outline-danger btn-sm"
+                                                        onclick="return confirm('Are you sure you want to delete this configuration? This action cannot be undone.')">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            </form>
                                         </div>
                                     </td>
                                 </tr>
@@ -198,13 +205,13 @@
                                 </a>
                             </li>
                             {% endif %}
-                            
+
                             <li class="page-item active">
                                 <span class="page-link">
                                     Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}
                                 </span>
                             </li>
-                            
+
                             {% if page_obj.has_next %}
                             <li class="page-item">
                                 <a class="page-link" href="?page={{ page_obj.next_page_number }}{% if search %}&search={{ search }}{% endif %}{% if status_filter %}&status={{ status_filter }}{% endif %}">

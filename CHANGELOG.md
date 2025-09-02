@@ -103,6 +103,56 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - VPN configurations require proper network planning
 - Regular security updates recommended
 
+## [1.5.1] - 2025-09-02
+
+### Fixed
+- **🔒 SSL Certificate Deployment Issue**
+  - Fixed "chicken-and-egg" problem where nginx vhost deployment failed when SSL certificates didn't exist yet
+  - Enhanced `NginxManager._generate_config()` to check for SSL certificate existence before referencing them
+  - Updated nginx configuration template to conditionally enable SSL based on certificate availability
+  - Implemented three-stage SSL deployment process:
+    1. Initial HTTP-only configuration for Let's Encrypt validation
+    2. Automated SSL certificate acquisition via certbot
+    3. Automatic regeneration with SSL enabled after certificates are obtained
+
+- **🛠️ Nginx Configuration Template Improvements**
+  - Added `ssl_certs_exist` template variable to control SSL configuration blocks
+  - Separated HTTP and HTTPS server configurations for better reliability
+  - Enhanced conditional SSL block rendering to prevent nginx configuration test failures
+  - Improved HTTP-to-HTTPS redirect logic to only activate after SSL certificates exist
+
+- **📋 Production Deployment Fixes**
+  - Resolved nginx configuration test failures on remote servers when SSL certificates are missing
+  - Fixed automatic SSL certificate deployment workflow for new vhosts
+  - Enhanced error handling during nginx configuration generation and deployment
+  - Verified successful SSL certificate acquisition and nginx configuration on production server (`m.koetsier.org`)
+
+### Enhanced
+- **⚡ Nginx Deployment Reliability**
+  - Improved nginx configuration generation to handle missing SSL certificates gracefully
+  - Enhanced deployment process to prevent service disruption during SSL certificate acquisition
+  - Better error messages and status feedback during vhost deployment
+  - Automatic configuration regeneration after SSL certificate acquisition
+
+### Technical Implementation
+- **Backend Enhancements**
+  - Added certificate existence validation in `nginx_mgr/utils.py`
+  - Enhanced template rendering with conditional SSL configuration
+  - Improved nginx service management and configuration testing
+  - Better integration between certbot SSL acquisition and nginx configuration
+
+- **Template Improvements**
+  - Updated `nginx_config.conf` template with conditional SSL blocks
+  - Separated HTTP and HTTPS server configurations for clarity
+  - Added temporary HTTP-only server for Let's Encrypt challenges
+  - Enhanced template logic for SSL certificate availability detection
+
+### Production Validation
+- Successfully tested SSL certificate acquisition process on production server
+- Verified nginx configuration deployment without SSL certificate pre-requirements
+- Confirmed automatic SSL upgrade after certificate acquisition
+- All vhost deployments now work correctly with SSL-enabled configurations
+
 ## [1.4.0] - 2025-09-01
 
 ### Added

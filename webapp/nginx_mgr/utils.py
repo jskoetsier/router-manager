@@ -1,10 +1,12 @@
+import logging
 import os
 import subprocess
-import logging
 from datetime import datetime, timedelta
+
 from django.conf import settings
 from django.template.loader import render_to_string
 from django.utils import timezone
+
 from .models import SSLCertificate
 
 logger = logging.getLogger(__name__)
@@ -14,10 +16,16 @@ class NginxManager:
     """Manages nginx configuration and operations"""
 
     def __init__(self):
-        self.nginx_config_dir = getattr(settings, 'NGINX_CONFIG_DIR', '/etc/nginx/sites-available')
-        self.nginx_enabled_dir = getattr(settings, 'NGINX_ENABLED_DIR', '/etc/nginx/sites-enabled')
-        self.nginx_binary = getattr(settings, 'NGINX_BINARY', '/usr/sbin/nginx')
-        self.systemctl_binary = getattr(settings, 'SYSTEMCTL_BINARY', '/usr/bin/systemctl')
+        self.nginx_config_dir = getattr(
+            settings, "NGINX_CONFIG_DIR", "/etc/nginx/sites-available"
+        )
+        self.nginx_enabled_dir = getattr(
+            settings, "NGINX_ENABLED_DIR", "/etc/nginx/sites-enabled"
+        )
+        self.nginx_binary = getattr(settings, "NGINX_BINARY", "/usr/sbin/nginx")
+        self.systemctl_binary = getattr(
+            settings, "SYSTEMCTL_BINARY", "/usr/bin/systemctl"
+        )
 
         # Ensure directories exist
         self._ensure_directories()
@@ -26,19 +34,33 @@ class NginxManager:
         """Ensure nginx configuration directories exist"""
         try:
             # Create nginx config directory if it doesn't exist
-            subprocess.run(['sudo', 'mkdir', '-p', self.nginx_config_dir],
-                         capture_output=True, text=True, timeout=10)
+            subprocess.run(
+                ["sudo", "mkdir", "-p", self.nginx_config_dir],
+                capture_output=True,
+                text=True,
+                timeout=10,
+            )
 
             # Create nginx enabled directory if it doesn't exist
-            subprocess.run(['sudo', 'mkdir', '-p', self.nginx_enabled_dir],
-                         capture_output=True, text=True, timeout=10)
+            subprocess.run(
+                ["sudo", "mkdir", "-p", self.nginx_enabled_dir],
+                capture_output=True,
+                text=True,
+                timeout=10,
+            )
 
             # Create certbot webroot directory
-            webroot_path = getattr(settings, 'CERTBOT_WEBROOT_PATH', '/var/www/certbot')
-            subprocess.run(['sudo', 'mkdir', '-p', webroot_path],
-                         capture_output=True, text=True, timeout=10)
+            webroot_path = getattr(settings, "CERTBOT_WEBROOT_PATH", "/var/www/certbot")
+            subprocess.run(
+                ["sudo", "mkdir", "-p", webroot_path],
+                capture_output=True,
+                text=True,
+                timeout=10,
+            )
 
-            logger.info(f"Ensured nginx directories exist: {self.nginx_config_dir}, {self.nginx_enabled_dir}")
+            logger.info(
+                f"Ensured nginx directories exist: {self.nginx_config_dir}, {self.nginx_enabled_dir}"
+            )
         except Exception as e:
             logger.warning(f"Could not ensure nginx directories exist: {e}")
 
@@ -54,11 +76,11 @@ class NginxManager:
 
             # Use sudo tee to write the file with elevated privileges
             process = subprocess.run(
-                ['sudo', 'tee', config_path],
+                ["sudo", "tee", config_path],
                 input=config_content,
                 text=True,
                 capture_output=True,
-                timeout=30
+                timeout=30,
             )
 
             if process.returncode != 0:
@@ -68,10 +90,10 @@ class NginxManager:
             enabled_path = os.path.join(self.nginx_enabled_dir, config_filename)
             if not os.path.exists(enabled_path):
                 result = subprocess.run(
-                    ['sudo', 'ln', '-sf', config_path, enabled_path],
+                    ["sudo", "ln", "-sf", config_path, enabled_path],
                     capture_output=True,
                     text=True,
-                    timeout=30
+                    timeout=30,
                 )
                 if result.returncode != 0:
                     return False, f"Failed to create symlink: {result.stderr}"
@@ -85,7 +107,10 @@ class NginxManager:
                 return False, "Failed to reload nginx"
 
             logger.info(f"Deployed nginx configuration for {proxy_config.name}")
-            return True, f"Successfully deployed configuration for {proxy_config.domain_name}"
+            return (
+                True,
+                f"Successfully deployed configuration for {proxy_config.domain_name}",
+            )
 
         except Exception as e:
             logger.error(f"Failed to deploy nginx config for {proxy_config.name}: {e}")
@@ -100,10 +125,10 @@ class NginxManager:
             enabled_path = os.path.join(self.nginx_enabled_dir, config_filename)
             if os.path.exists(enabled_path):
                 result = subprocess.run(
-                    ['sudo', 'rm', enabled_path],
+                    ["sudo", "rm", enabled_path],
                     capture_output=True,
                     text=True,
-                    timeout=30
+                    timeout=30,
                 )
                 if result.returncode != 0:
                     return False, f"Failed to remove symlink: {result.stderr}"
@@ -112,10 +137,10 @@ class NginxManager:
             config_path = os.path.join(self.nginx_config_dir, config_filename)
             if os.path.exists(config_path):
                 result = subprocess.run(
-                    ['sudo', 'rm', config_path],
+                    ["sudo", "rm", config_path],
                     capture_output=True,
                     text=True,
-                    timeout=30
+                    timeout=30,
                 )
                 if result.returncode != 0:
                     return False, f"Failed to remove config file: {result.stderr}"
@@ -124,7 +149,10 @@ class NginxManager:
             self.reload()
 
             logger.info(f"Removed nginx configuration for {proxy_config.name}")
-            return True, f"Successfully removed configuration for {proxy_config.domain_name}"
+            return (
+                True,
+                f"Successfully removed configuration for {proxy_config.domain_name}",
+            )
 
         except Exception as e:
             logger.error(f"Failed to remove nginx config for {proxy_config.name}: {e}")
@@ -132,22 +160,31 @@ class NginxManager:
 
     def _generate_config(self, proxy_config):
         """Generate nginx configuration content"""
+        ssl_cert_path = (
+            f"/etc/letsencrypt/live/{proxy_config.domain_name}/fullchain.pem"
+        )
+        ssl_key_path = f"/etc/letsencrypt/live/{proxy_config.domain_name}/privkey.pem"
+
+        # Check if SSL certificates actually exist
+        ssl_certs_exist = os.path.exists(ssl_cert_path) and os.path.exists(ssl_key_path)
+
         context = {
-            'config': proxy_config,
-            'ssl_cert_path': f'/etc/letsencrypt/live/{proxy_config.domain_name}/fullchain.pem',
-            'ssl_key_path': f'/etc/letsencrypt/live/{proxy_config.domain_name}/privkey.pem',
+            "config": proxy_config,
+            "ssl_cert_path": ssl_cert_path,
+            "ssl_key_path": ssl_key_path,
+            "ssl_certs_exist": ssl_certs_exist,
         }
 
-        return render_to_string('nginx_mgr/nginx_config.conf', context)
+        return render_to_string("nginx_mgr/nginx_config.conf", context)
 
     def test_config(self):
         """Test nginx configuration"""
         try:
             result = subprocess.run(
-                ['sudo', self.nginx_binary, '-t'],
+                ["sudo", self.nginx_binary, "-t"],
                 capture_output=True,
                 text=True,
-                timeout=30
+                timeout=30,
             )
             return result.returncode == 0
         except Exception as e:
@@ -158,10 +195,10 @@ class NginxManager:
         """Reload nginx configuration"""
         try:
             result = subprocess.run(
-                ['sudo', self.systemctl_binary, 'reload', 'nginx'],
+                ["sudo", self.systemctl_binary, "reload", "nginx"],
                 capture_output=True,
                 text=True,
-                timeout=30
+                timeout=30,
             )
             if result.returncode == 0:
                 return True
@@ -176,10 +213,10 @@ class NginxManager:
         """Restart nginx service"""
         try:
             result = subprocess.run(
-                ['sudo', self.systemctl_binary, 'restart', 'nginx'],
+                ["sudo", self.systemctl_binary, "restart", "nginx"],
                 capture_output=True,
                 text=True,
-                timeout=30
+                timeout=30,
             )
             return result.returncode == 0
         except Exception as e:
@@ -190,12 +227,12 @@ class NginxManager:
         """Check if nginx is running"""
         try:
             result = subprocess.run(
-                [self.systemctl_binary, 'is-active', 'nginx'],
+                [self.systemctl_binary, "is-active", "nginx"],
                 capture_output=True,
                 text=True,
-                timeout=10
+                timeout=10,
             )
-            return result.returncode == 0 and result.stdout.strip() == 'active'
+            return result.returncode == 0 and result.stdout.strip() == "active"
         except Exception as e:
             logger.error(f"Failed to check nginx status: {e}")
             return False
@@ -203,25 +240,22 @@ class NginxManager:
     def get_status(self):
         """Get detailed nginx status"""
         return {
-            'running': self.is_running(),
-            'config_valid': self.test_config(),
-            'version': self.get_version(),
+            "running": self.is_running(),
+            "config_valid": self.test_config(),
+            "version": self.get_version(),
         }
 
     def get_version(self):
         """Get nginx version"""
         try:
             result = subprocess.run(
-                [self.nginx_binary, '-v'],
-                capture_output=True,
-                text=True,
-                timeout=10
+                [self.nginx_binary, "-v"], capture_output=True, text=True, timeout=10
             )
             if result.returncode == 0:
                 # nginx outputs version to stderr
                 version_line = result.stderr.strip()
-                if 'nginx/' in version_line:
-                    return version_line.split('nginx/')[1].split()[0]
+                if "nginx/" in version_line:
+                    return version_line.split("nginx/")[1].split()[0]
             return "Unknown"
         except Exception as e:
             logger.error(f"Failed to get nginx version: {e}")
@@ -232,9 +266,11 @@ class CertbotManager:
     """Manages SSL certificates via certbot/Let's Encrypt"""
 
     def __init__(self):
-        self.certbot_binary = getattr(settings, 'CERTBOT_BINARY', '/usr/bin/certbot')
-        self.webroot_path = getattr(settings, 'CERTBOT_WEBROOT_PATH', '/var/www/certbot')
-        self.letsencrypt_dir = getattr(settings, 'LETSENCRYPT_DIR', '/etc/letsencrypt')
+        self.certbot_binary = getattr(settings, "CERTBOT_BINARY", "/usr/bin/certbot")
+        self.webroot_path = getattr(
+            settings, "CERTBOT_WEBROOT_PATH", "/var/www/certbot"
+        )
+        self.letsencrypt_dir = getattr(settings, "LETSENCRYPT_DIR", "/etc/letsencrypt")
 
     def obtain_certificate(self, proxy_config):
         """Obtain SSL certificate for a domain"""
@@ -242,26 +278,27 @@ class CertbotManager:
             domain = proxy_config.domain_name
 
             # Ensure webroot directory exists using sudo
-            subprocess.run(['sudo', 'mkdir', '-p', self.webroot_path], check=True)
+            subprocess.run(["sudo", "mkdir", "-p", self.webroot_path], check=True)
 
             # Run certbot to obtain certificate using sudo
             cmd = [
-                'sudo', self.certbot_binary,
-                'certonly',
-                '--webroot',
-                '--webroot-path', self.webroot_path,
-                '-d', domain,
-                '--non-interactive',
-                '--agree-tos',
-                '--email', self._get_admin_email(),
-                '--no-eff-email'
+                "sudo",
+                self.certbot_binary,
+                "certonly",
+                "--webroot",
+                "--webroot-path",
+                self.webroot_path,
+                "-d",
+                domain,
+                "--non-interactive",
+                "--agree-tos",
+                "--email",
+                self._get_admin_email(),
+                "--no-eff-email",
             ]
 
             result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=300  # 5 minutes timeout
+                cmd, capture_output=True, text=True, timeout=300  # 5 minutes timeout
             )
 
             if result.returncode == 0:
@@ -272,13 +309,17 @@ class CertbotManager:
                 return True, f"SSL certificate obtained for {domain}"
             else:
                 error_msg = result.stderr or result.stdout
-                logger.error(f"Failed to obtain SSL certificate for {domain}: {error_msg}")
+                logger.error(
+                    f"Failed to obtain SSL certificate for {domain}: {error_msg}"
+                )
                 return False, f"Certbot failed: {error_msg}"
 
         except subprocess.TimeoutExpired:
             return False, "Certificate request timed out"
         except Exception as e:
-            logger.error(f"Failed to obtain certificate for {proxy_config.domain_name}: {e}")
+            logger.error(
+                f"Failed to obtain certificate for {proxy_config.domain_name}: {e}"
+            )
             return False, str(e)
 
     def renew_certificate(self, proxy_config):
@@ -287,18 +328,15 @@ class CertbotManager:
             domain = proxy_config.domain_name
 
             cmd = [
-                'sudo', self.certbot_binary,
-                'renew',
-                '--cert-name', domain,
-                '--non-interactive'
+                "sudo",
+                self.certbot_binary,
+                "renew",
+                "--cert-name",
+                domain,
+                "--non-interactive",
             ]
 
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=300
-            )
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
 
             if result.returncode == 0:
                 # Update certificate info
@@ -308,30 +346,26 @@ class CertbotManager:
                 return True, f"SSL certificate renewed for {domain}"
             else:
                 error_msg = result.stderr or result.stdout
-                logger.error(f"Failed to renew SSL certificate for {domain}: {error_msg}")
+                logger.error(
+                    f"Failed to renew SSL certificate for {domain}: {error_msg}"
+                )
                 return False, f"Renewal failed: {error_msg}"
 
         except subprocess.TimeoutExpired:
             return False, "Certificate renewal timed out"
         except Exception as e:
-            logger.error(f"Failed to renew certificate for {proxy_config.domain_name}: {e}")
+            logger.error(
+                f"Failed to renew certificate for {proxy_config.domain_name}: {e}"
+            )
             return False, str(e)
 
     def renew_all_certificates(self):
         """Renew all certificates"""
         try:
-            cmd = [
-                self.certbot_binary,
-                'renew',
-                '--non-interactive',
-                '--quiet'
-            ]
+            cmd = [self.certbot_binary, "renew", "--non-interactive", "--quiet"]
 
             result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=600  # 10 minutes timeout
+                cmd, capture_output=True, text=True, timeout=600  # 10 minutes timeout
             )
 
             return result.returncode == 0
@@ -343,31 +377,31 @@ class CertbotManager:
     def _save_certificate_info(self, proxy_config, domain):
         """Save or update SSL certificate information in database"""
         try:
-            cert_dir = os.path.join(self.letsencrypt_dir, 'live', domain)
+            cert_dir = os.path.join(self.letsencrypt_dir, "live", domain)
 
             if not os.path.exists(cert_dir):
                 raise Exception(f"Certificate directory not found: {cert_dir}")
 
             # Get certificate expiry date
-            cert_path = os.path.join(cert_dir, 'fullchain.pem')
+            cert_path = os.path.join(cert_dir, "fullchain.pem")
             expiry_date = self._get_certificate_expiry(cert_path)
 
             # Create or update SSL certificate record
             ssl_cert, created = SSLCertificate.objects.get_or_create(
                 proxy_config=proxy_config,
                 defaults={
-                    'certificate_path': cert_path,
-                    'private_key_path': os.path.join(cert_dir, 'privkey.pem'),
-                    'fullchain_path': cert_path,
-                    'issued_date': timezone.now(),
-                    'expiry_date': expiry_date,
-                }
+                    "certificate_path": cert_path,
+                    "private_key_path": os.path.join(cert_dir, "privkey.pem"),
+                    "fullchain_path": cert_path,
+                    "issued_date": timezone.now(),
+                    "expiry_date": expiry_date,
+                },
             )
 
             if not created:
                 # Update existing record
                 ssl_cert.certificate_path = cert_path
-                ssl_cert.private_key_path = os.path.join(cert_dir, 'privkey.pem')
+                ssl_cert.private_key_path = os.path.join(cert_dir, "privkey.pem")
                 ssl_cert.fullchain_path = cert_path
                 ssl_cert.expiry_date = expiry_date
                 ssl_cert.is_valid = True
@@ -379,21 +413,14 @@ class CertbotManager:
     def _get_certificate_expiry(self, cert_path):
         """Get certificate expiry date"""
         try:
-            cmd = [
-                'openssl', 'x509', '-in', cert_path, '-noout', '-enddate'
-            ]
+            cmd = ["openssl", "x509", "-in", cert_path, "-noout", "-enddate"]
 
-            result = subprocess.run(
-                cmd,
-                capture_output=True,
-                text=True,
-                timeout=10
-            )
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
 
             if result.returncode == 0:
                 # Parse output: notAfter=Jan  1 00:00:00 2024 GMT
-                date_str = result.stdout.strip().split('=')[1]
-                expiry_date = datetime.strptime(date_str, '%b %d %H:%M:%S %Y %Z')
+                date_str = result.stdout.strip().split("=")[1]
+                expiry_date = datetime.strptime(date_str, "%b %d %H:%M:%S %Y %Z")
                 return timezone.make_aware(expiry_date)
 
         except Exception as e:
@@ -405,16 +432,16 @@ class CertbotManager:
     def _get_admin_email(self):
         """Get admin email for Let's Encrypt registration"""
         # You can configure this in settings or get from user model
-        return getattr(settings, 'LETSENCRYPT_EMAIL', 'admin@localhost')
+        return getattr(settings, "LETSENCRYPT_EMAIL", "admin@localhost")
 
     def get_status(self):
         """Get certbot status"""
         try:
             result = subprocess.run(
-                [self.certbot_binary, '--version'],
+                [self.certbot_binary, "--version"],
                 capture_output=True,
                 text=True,
-                timeout=10
+                timeout=10,
             )
 
             available = result.returncode == 0
@@ -423,19 +450,19 @@ class CertbotManager:
             if available and result.stdout:
                 # Extract version from output
                 version_line = result.stdout.strip()
-                if 'certbot' in version_line:
+                if "certbot" in version_line:
                     version = version_line.split()[1]
 
             return {
-                'available': available,
-                'version': version,
+                "available": available,
+                "version": version,
             }
 
         except Exception as e:
             logger.error(f"Failed to get certbot status: {e}")
             return {
-                'available': False,
-                'version': "Unknown",
+                "available": False,
+                "version": "Unknown",
             }
 
 
@@ -443,8 +470,10 @@ class DockerNginxManager:
     """Alternative nginx manager for Docker environments"""
 
     def __init__(self):
-        self.container_name = getattr(settings, 'NGINX_CONTAINER_NAME', 'nginx-proxy')
-        self.docker_compose_file = getattr(settings, 'DOCKER_COMPOSE_FILE', 'docker-compose.yml')
+        self.container_name = getattr(settings, "NGINX_CONTAINER_NAME", "nginx-proxy")
+        self.docker_compose_file = getattr(
+            settings, "DOCKER_COMPOSE_FILE", "docker-compose.yml"
+        )
 
     def deploy_config(self, proxy_config):
         """Deploy configuration in Docker environment"""
@@ -459,10 +488,10 @@ class DockerNginxManager:
         """Reload nginx in Docker container"""
         try:
             result = subprocess.run(
-                ['docker', 'exec', self.container_name, 'nginx', '-s', 'reload'],
+                ["docker", "exec", self.container_name, "nginx", "-s", "reload"],
                 capture_output=True,
                 text=True,
-                timeout=30
+                timeout=30,
             )
             return result.returncode == 0
         except Exception as e:

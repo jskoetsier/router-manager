@@ -1,6 +1,6 @@
 # Router Manager
 
-**Version 1.4.0** - A comprehensive web-based router management system for RHEL 9 and Rocky Linux 9 distributions. This application provides an intuitive web interface for managing network configurations, firewall rules, VPN tunnels, static routes, nginx reverse proxy, and system monitoring with fully functional nftables integration.
+**Version 1.5.1** - A comprehensive web-based router management system for RHEL 9 and Rocky Linux 9 distributions. This application provides an intuitive web interface for managing network configurations, firewall rules, VPN tunnels, static routes, nginx reverse proxy, and system monitoring with fully functional nftables integration.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.9+](https://img.shields.io/badge/python-3.9+-blue.svg)](https://www.python.org/downloads/)
@@ -25,7 +25,14 @@
 - **📋 Working Routing Table**: Full IPv4/IPv6 routing table display with proper parsing
 - **⚡ Functional UI**: All network pages work without template syntax errors
 
-### 🆕 What's New in v1.4.0
+### 🆕 What's New in v1.5.1
+- **🔒 Fixed SSL Certificate Deployment Issue**: Resolved "chicken-and-egg" problem where nginx vhost deployment failed when SSL certificates didn't exist yet
+- **⚡ Enhanced Nginx Deployment Reliability**: Improved configuration generation to handle missing SSL certificates gracefully
+- **🛠️ Three-Stage SSL Deployment Process**: Initial HTTP-only configuration → SSL certificate acquisition → Automatic SSL upgrade
+- **📋 Production Deployment Fixes**: Resolved nginx configuration test failures on remote servers during SSL certificate setup
+- **🎯 Conditional SSL Configuration**: Templates now conditionally enable SSL based on certificate availability
+
+### 🚀 What's New in v1.4.0
 - **🌍 Complete Nginx Reverse Proxy Management**: Full nginx configuration management through web interface
 - **🔒 Automatic SSL Certificate Generation**: Integrated Let's Encrypt certificate automation with renewal
 - **📋 Domain Management**: Create, edit, and delete nginx proxy configurations with real-time validation
